@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>成长OS · 个人大学成长系统</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">G</div>
+        <div>
+          <strong>成长OS</strong>
+          <span>Personal Growth System</span>
+        </div>
+      </div>
+      <div class="profile-mini">
+        <div class="avatar">S</div>
+        <div>
+          <b>大一 · 工程管理</b>
+          <span>目标：转入计算机</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <button class="nav-item active" data-page="dashboard"><span>⌂</span>总览</button>
+        <button class="nav-item" data-page="daily"><span>✓</span>今日学习</button>
+        <button class="nav-item" data-page="engineering"><span>◈</span>工程管理</button>
+        <button class="nav-item" data-page="computer"><span>⌘</span>计算机路线</button>
+        <button class="nav-item" data-page="tests"><span>▣</span>作业与测评</button>
+        <button class="nav-item" data-page="grades"><span>◒</span>成绩分析</button>
+        <button class="nav-item" data-page="projects"><span>🚀</span>创业项目</button>
+        <button class="nav-item" data-page="ai"><span>✦</span>AI学习导师</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="goal-box">
+          <small>本学期核心目标</small>
+          <b>守住成绩 · 补齐计算机 · 验证创业</b>
+          <div class="mini-progress"><i style="width:64%"></i></div>
+          <span>当前总进度 64%</span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">2026—2027 学年上学期</div>
+          <h1 id="pageTitle">今天，也为转专业多走一步。</h1>
+        </div>
+        <div class="top-actions">
+          <button class="icon-btn" id="themeBtn" title="切换亮暗模式">◐</button>
+          <div class="date-chip" id="dateChip"></div>
+        </div>
+      </header>
+
+      <section id="dashboard" class="page active-page">
+        <div class="hero-grid">
+          <div class="hero-card">
+            <div>
+              <div class="eyebrow light">CURRENT MISSION</div>
+              <h2>工程管理稳住基本盘<br><span>计算机建立第二能力曲线</span></h2>
+              <p>你的学习系统把“课程 → 学习 → 作业 → 测试 → 成绩 → 复盘”串成一个闭环。</p>
+              <div class="hero-actions">
+                <button class="primary-btn" data-jump="daily">开始今日学习</button>
+                <button class="ghost-btn" data-jump="computer">查看计算机路线</button>
+              </div>
+            </div>
+            <div class="orbital"><div class="orbital-core">64%</div></div>
+          </div>
+
+          <div class="stat-card">
+            <span>连续学习</span>
+            <strong>12 <small>天</small></strong>
+            <em>较上周 +3 天</em>
+          </div>
+          <div class="stat-card">
+            <span>本周有效学习</span>
+            <strong>17.5 <small>小时</small></strong>
+            <em>目标 20 小时</em>
+          </div>
+          <div class="stat-card accent-stat">
+            <span>计算机路线</span>
+            <strong>35 <small>%</small></strong>
+            <em>Python 正在进行</em>
+          </div>
+        </div>
+
+        <div class="content-grid three">
+          <div class="panel wide-panel">
+            <div class="panel-head"><div><h3>今日任务</h3><p>按照你的转专业节奏自动拆分</p></div><button class="text-btn" data-jump="daily">全部任务 →</button></div>
+            <div id="dashboardTasks" class="task-list"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h3>本周能力</h3><p>基于学习记录估算</p></div></div>
+            <div class="skill-row"><span>工程数学</span><b>82</b><i><u style="width:82%"></u></i></div>
+            <div class="skill-row"><span>英语</span><b>78</b><i><u style="width:78%"></u></i></div>
+            <div class="skill-row"><span>Python</span><b>42</b><i><u style="width:42%"></u></i></div>
+            <div class="skill-row"><span>数据结构</span><b>18</b><i><u style="width:18%"></u></i></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h3>时间分配</h3><p>建议比例 50 / 30 / 20</p></div></div>
+            <div class="donut"><div><b>50%</b><span>学业</span></div></div>
+            <div class="legend"><span><i></i>工程管理课程</span><span><i></i>计算机能力</span><span><i></i>创业实践</span></div>
+          </div>
+        </div>
+
+        <div class="panel timeline-panel">
+          <div class="panel-head"><div><h3>本周节奏</h3><p>把空闲时间优先给“编程 + 创业 + 复习”</p></div></div>
+          <div class="week-grid">
+            <div><b>周一</b><span>高数复习 · Python</span></div>
+            <div><b>周二</b><span>计算机主学习 · 创业调研</span></div>
+            <div><b>周三</b><span>英语 · Python练习</span></div>
+            <div><b>周四</b><span>数据结构预习 · 课程复盘</span></div>
+            <div><b>周五</b><span>课程整理 · 创业推进</span></div>
+            <div class="focus"><b>周六</b><span>深度学习 3h + 创业 4h</span></div>
+            <div><b>周日</b><span>周测 · 错题复盘 · 下周计划</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="daily" class="page">
+        <div class="section-title"><div><div class="eyebrow">TODAY</div><h2>今日学习工作台</h2><p>完成任务即可留下自己的真实学习数据。</p></div><div class="score-pill">今日完成度 <b id="dailyRate">0%</b></div></div>
+        <div class="content-grid two">
+          <div class="panel">
+            <div class="panel-head"><div><h3>今日任务</h3><p>学习、作业和创业都在这里打卡</p></div></div>
+            <div id="dailyTasks" class="task-list large"></div>
+          </div>
+          <div class="panel focus-panel">
+            <div class="panel-head"><div><h3>学习记录</h3><p>记录分钟数，系统才能更准确地调整计划</p></div></div>
+            <label>科目<input id="logSubject" value="Python程序设计" /></label>
+            <label>学习分钟数<input id="logMinutes" type="number" min="1" value="60" /></label>
+            <label>本次成绩（可选）<input id="logScore" type="number" min="0" max="100" placeholder="例如 86" /></label>
+            <label>备注<textarea id="logNote" rows="4" placeholder="本次学了什么、哪里没掌握……"></textarea></label>
+            <button class="primary-btn full" onclick="saveStudyLog()">保存学习记录</button>
+            <div class="saved-note" id="savedLog">尚未添加记录</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="engineering" class="page">
+        <div class="section-title"><div><div class="eyebrow">ENGINEERING MANAGEMENT</div><h2>工程管理 · 大一上学习中心</h2><p>先保证现专业成绩，再为转专业争取空间。</p></div><span class="route-tag">基础盘</span></div>
+        <div class="course-grid" id="engineeringCourses"></div>
+      </section>
+
+      <section id="computer" class="page">
+        <div class="section-title"><div><div class="eyebrow">COMPUTER SCIENCE</div><h2>计算机科学与技术 · 补强路线</h2><p>从 Python 开始，再进入 C、数据结构、数据库和 Web。</p></div><span class="route-tag purple">转专业主线</span></div>
+        <div class="roadmap" id="computerRoadmap"></div>
+      </section>
+
+      <section id="tests" class="page">
+        <div class="section-title"><div><div class="eyebrow">ASSIGNMENTS & TESTS</div><h2>作业与测评中心</h2><p>每学完一章，必须通过测试才能解锁下一章。</p></div><span class="route-tag orange">学习闭环</span></div>
+        <div class="content-grid two">
+          <div class="panel">
+            <div class="panel-head"><div><h3>Python · 第1章测试</h3><p>变量、数据类型、条件判断</p></div><span class="score-tag">未测试</span></div>
+            <div class="quiz" id="quizBox">
+              <p><b>1.</b> Python 中正确的变量赋值方式是：</p>
+              <button onclick="answerQuiz(this,false)">A. int a</button>
+              <button onclick="answerQuiz(this,true)">B. a = 10</button>
+              <button onclick="answerQuiz(this,false)">C. define a</button>
+              <button onclick="answerQuiz(this,false)">D. var a</button>
+            </div>
+            <div class="code-assignment"><b>编程作业</b><p>编写一个程序：输入成绩，输出优秀 / 良好 / 及格 / 不及格。</p><button class="outline-btn" onclick="alert('作业模板已打开：请在你的本地编辑器完成后，将结果接入提交接口。')">打开作业要求</button></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h3>测评规则</h3><p>让成绩真正反映“是否掌握”</p></div></div>
+            <div class="rule"><b>章节测试</b><span>70% 理论 + 30% 编程</span></div>
+            <div class="rule"><b>达标线</b><span>≥ 80分 才解锁下一章</span></div>
+            <div class="rule"><b>错题</b><span>进入错题本，3天后自动重测</span></div>
+            <div class="rule"><b>项目</b><span>每月完成 1 个可展示作品</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="grades" class="page">
+        <div class="section-title"><div><div class="eyebrow">PERFORMANCE</div><h2>成绩与能力分析</h2><p>不是只看分数，而是看哪些章节需要回炉。</p></div></div>
+        <div class="content-grid three" id="gradeCards"></div>
+        <div class="panel chart-panel"><div class="panel-head"><div><h3>近 8 周成长曲线</h3><p>示例数据可在后端接入真实成绩</p></div></div><div class="bar-chart" id="barChart"></div></div>
+      </section>
+
+      <section id="projects" class="page">
+        <div class="section-title"><div><div class="eyebrow">ENTREPRENEURSHIP</div><h2>创业项目实验室</h2><p>先验证需求，再开发；创业不能挤掉转专业主线。</p></div><span class="route-tag green">20% 时间</span></div>
+        <div class="content-grid two">
+          <div class="panel project-main"><div class="project-cover"><span>AI × 校园</span><b>AI 学习助手</b><p>上传资料 → 自动总结 → 生成练习 → 追踪成绩</p></div><div class="project-metrics"><span>测试用户 <b>23</b></span><span>目标 <b>100</b></span><span>本周任务 <b>4</b></span></div></div>
+          <div class="panel"><div class="panel-head"><div><h3>本周创业任务</h3></div></div><div class="task-list"><div class="task-item"><button class="check"></button><div><b>访谈 3 名同学</b><span>了解学习工具的真实痛点</span></div></div><div class="task-item"><button class="check"></button><div><b>完成首页原型</b><span>把“课程—测试—反馈”跑通</span></div></div><div class="task-item"><button class="check"></button><div><b>整理用户反馈</b><span>输出需求优先级</span></div></div></div></div>
+        </div>
+      </section>
+
+      <section id="ai" class="page">
+        <div class="section-title"><div><div class="eyebrow">AI COACH</div><h2>AI 学习导师</h2><p>读取你的打卡、学习记录和错题，生成下一周学习计划。</p></div><span class="route-tag purple">已接入接口</span></div>
+        <div class="content-grid two">
+          <div class="panel ai-panel"><div class="ai-orb">✦</div><h3>本周建议</h3><p>先积累几天真实数据，再让 AI 做个性化调整。</p><ul><li>根据最近14天任务完成情况调整强弱项。</li><li>根据学习分钟数与成绩识别薄弱科目。</li><li>根据未掌握错题给出复习建议。</li></ul><button class="primary-btn" onclick="generateAIPlan()">生成下周学习计划</button><div id="aiResult" class="ai-result">AI 输出会显示在这里。</div></div>
+          <div class="panel"><div class="panel-head"><div><h3>接入说明</h3><p>你已经上传了 ai_plan.php，前端会直接调用它。</p></div></div><div class="endpoint"><code>POST /ai_plan.php</code><span>需要 PHP + MySQL + 登录会话 + API 配置</span></div><div class="endpoint"><b>数据来源</b><span>最近14天任务、学习记录、未掌握错题</span></div><div class="endpoint"><b>输出</b><span>7天具体学习任务 + 错题复习建议</span></div></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="js/app.js"></script>
+</body>
+</html>
