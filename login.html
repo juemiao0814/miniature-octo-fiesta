@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>登录 - 成长OS</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.auth-box{max-width:360px;margin:80px auto;background:white;padding:35px;border-radius:15px;box-shadow:0 5px 15px rgba(0,0,0,.1);}
+.auth-box h2{margin-top:0;text-align:center;}
+.auth-box input{width:100%;padding:10px;margin:8px 0;box-sizing:border-box;border:1px solid #ddd;border-radius:8px;}
+.auth-box button{width:100%;padding:10px;margin-top:10px;background:#2563eb;color:white;border:none;border-radius:8px;cursor:pointer;}
+.auth-box button:hover{background:#1d4ed8;}
+.auth-msg{color:#dc2626;text-align:center;margin-top:10px;min-height:20px;}
+.auth-box p{text-align:center;}
+</style>
+</head>
+<body>
+
+<header>
+<h1>成长OS</h1>
+<p>工程管理 × 计算机科学与技术成长系统</p>
+</header>
+
+<div class="auth-box">
+<h2>登录</h2>
+<input type="text" id="username" placeholder="用户名">
+<input type="password" id="password" placeholder="密码">
+<button onclick="doLogin()">登录</button>
+<p class="auth-msg" id="msg"></p>
+<p>还没有账号？<a href="register.html">去注册</a></p>
+</div>
+
+<script>
+async function doLogin(){
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+    const msg = document.getElementById("msg");
+    msg.textContent = "";
+
+    try {
+        const res = await fetch("api/login.php", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({username, password})
+        });
+        const data = await res.json();
+        if (data.success) {
+            window.location.href = "index.html";
+        } else {
+            msg.textContent = data.message || "登录失败";
+        }
+    } catch (e) {
+        msg.textContent = "无法连接服务器，请检查后端是否已部署";
+    }
+}
+</script>
+
+</body>
+</html>

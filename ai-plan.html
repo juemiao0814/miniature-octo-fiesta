@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>AI学习规划助手 - 成长OS</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+<div class="header-row">
+<div>
+<h1>AI学习规划助手</h1>
+<p><a href="index.html" class="back-link">← 返回首页</a></p>
+</div>
+<div class="user-box">
+<span id="usernameDisplay"></span>
+<button onclick="doLogout()">退出登录</button>
+</div>
+</div>
+</header>
+
+<section class="page-body">
+
+<div class="card wide">
+<p>根据你最近14天的任务打卡、学习记录和错题本，生成一份下周学习计划。</p>
+<button onclick="generatePlan()" id="genBtn">生成本周学习计划</button>
+<p class="auth-msg" id="msg"></p>
+</div>
+
+<div class="card wide" id="planCard" style="display:none;">
+<h2>AI 生成的学习计划</h2>
+<div id="planContent" class="plan-content"></div>
+</div>
+
+</section>
+
+<script src="js/common.js"></script>
+<script src="js/ai-plan.js"></script>
+
+</body>
+</html>

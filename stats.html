@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>学习记录与成绩曲线 - 成长OS</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header>
+<div class="header-row">
+<div>
+<h1>学习记录与成绩曲线</h1>
+<p><a href="index.html" class="back-link">← 返回首页</a></p>
+</div>
+<div class="user-box">
+<span id="usernameDisplay"></span>
+<button onclick="doLogout()">退出登录</button>
+</div>
+</div>
+</header>
+
+<section class="page-body">
+
+<div class="card wide">
+<h2>添加今日学习记录</h2>
+<div class="form-row">
+<input type="text" id="subject" placeholder="科目，如 Python">
+<input type="number" id="minutes" placeholder="学习时长(分钟)">
+<input type="number" id="score" placeholder="测验分数(可选)">
+</div>
+<div class="form-row">
+<input type="text" id="note" placeholder="备注(可选)" style="flex:1">
+<button onclick="submitLog()">保存记录</button>
+</div>
+<p class="auth-msg" id="msg"></p>
+</div>
+
+<div class="card wide">
+<h2>最近30天学习时长曲线</h2>
+<canvas id="chartCanvas" height="90"></canvas>
+</div>
+
+<div class="card wide">
+<h2>历史记录</h2>
+<ul id="logList"><li>加载中...</li></ul>
+</div>
+
+</section>
+
+<script src="js/common.js"></script>
+<script src="js/stats.js"></script>
+
+</body>
+</html>

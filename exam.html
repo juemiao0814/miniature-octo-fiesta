@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Python第一章测试</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<h1>Python第一章测试</h1>
+
+<p>Python变量赋值正确的是：</p>
+
+<button onclick="check(1, 'int a')">A. int a</button>
+<button onclick="check(2, 'a=10')">B. a=10</button>
+
+<p id="result"></p>
+
+<p><a href="../index.html">返回首页</a></p>
+
+<script src="../js/common.js"></script>
+<script>
+const QUESTION = "Python变量赋值正确的是：";
+const CORRECT_ANSWER = "a=10";
+
+async function check(a, answerText){
+    const resultEl = document.getElementById("result");
+
+    if (a === 2) {
+        resultEl.style.color = "#16a34a";
+        resultEl.textContent = "回答正确 +10分";
+    } else {
+        resultEl.style.color = "#dc2626";
+        resultEl.textContent = "答案错误";
+
+        // 答错自动加入错题本（需要先登录，未登录则静默跳过）
+        try {
+            const session = await checkSession();
+            if (session.logged_in) {
+                await fetch("../api/wrong_questions.php", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        action: "add",
+                        subject: "Python",
+                        question: QUESTION,
+                        my_answer: answerText,
+                        correct_answer: CORRECT_ANSWER,
+                        note: "来自第一章测试"
+                    })
+                });
+            }
+        } catch (e) {
+            console.error("自动加入错题本失败", e);
+        }
+    }
+}
+</script>
+
+</body>
+</html>

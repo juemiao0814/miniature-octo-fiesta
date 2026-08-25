@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>成长OS - Personal Growth System</title>
+
+<link rel="stylesheet" href="css/style.css">
+
+</head>
+
+
+<body>
+
+
+<header>
+
+<div class="header-row">
+<div>
+<h1>成长OS</h1>
+<p>工程管理 × 计算机科学与技术成长系统</p>
+</div>
+<div class="user-box">
+<span id="usernameDisplay"></span>
+<button id="logoutBtn" onclick="doLogout()">退出登录</button>
+</div>
+</div>
+
+</header>
+
+
+
+<section class="dashboard">
+
+
+<div class="card">
+
+<h2>我的目标</h2>
+
+<p>
+工程管理 → 计算机科学与技术
+</p>
+
+<p>
+距离转专业：
+180天
+</p>
+
+</div>
+
+
+
+<div class="card">
+
+<h2>今日任务</h2>
+
+
+<ul id="taskList">
+<li>加载中...</li>
+</ul>
+
+<div class="add-task-row">
+<input type="text" id="newTaskInput" placeholder="添加新任务...">
+<button onclick="addTask()">添加</button>
+</div>
+
+
+</div>
+
+
+
+
+<div class="card">
+
+
+<h2>能力成长</h2>
+
+
+<p>
+工程管理：
+80%
+</p>
+
+
+<div class="progress">
+
+<div style="width:80%">
+</div>
+
+</div>
+
+
+
+<p>
+计算机：
+35%
+</p>
+
+
+<div class="progress">
+
+<div style="width:35%">
+</div>
+
+</div>
+
+
+</div>
+
+
+</section>
+
+
+
+
+<section class="menu">
+
+
+<a href="courses/engineering.html">
+
+工程管理学习中心
+
+</a>
+
+
+<a href="courses/computer.html">
+
+计算机学习中心
+
+</a>
+
+
+<a href="test/exam.html">
+
+考试测评中心
+
+</a>
+
+
+<a href="stats.html">
+
+学习记录/成绩曲线
+
+</a>
+
+
+<a href="wrongbook.html">
+
+错题本
+
+</a>
+
+
+<a href="homework.html">
+
+作业提交
+
+</a>
+
+
+<a href="ai-plan.html">
+
+AI学习规划助手
+
+</a>
+
+
+</section>
+
+
+
+<script src="js/app.js"></script>
+
+
+</body>
+
+
+</html>
