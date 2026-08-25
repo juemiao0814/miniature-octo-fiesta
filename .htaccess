@@ -1,6 +1,0 @@
-# 安全设置：禁止此目录下的任何脚本被服务器执行
-# 防止恶意用户通过"上传作业"功能上传 .php 等脚本文件后直接运行
-
-<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|cgi|sh)$">
-    Require all denied
-</FilesMatch>
