@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="screen-orientation" content="landscape">
+<title>3D云游郑州大观音寺</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#0c0a14;font-family:"Noto Serif SC","Songti SC",SimSun,serif;color:#f0e2c0;touch-action:none}
+canvas{display:block}
+#start{position:fixed;inset:0;background:radial-gradient(#3a2418,#0c0a14);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:9;text-align:center;padding:20px}
+#start h1{color:#e8c36a;letter-spacing:8px;font-size:30px}
+#start p{opacity:.7;font-size:13px;letter-spacing:2px}
+input{background:#14100c;border:1px solid #6a5230;color:#f0e2c0;padding:10px 14px;border-radius:8px;font:inherit;width:240px;text-align:center}
+.cols{display:flex;gap:10px}
+.cols button{width:70px;padding:8px 0;border-radius:18px;border:2px solid #6a5230;color:#fff;font:inherit;cursor:pointer;font-size:13px}
+.cols button.on{border-color:#e8c36a;box-shadow:0 0 12px #e8c36a}
+.go{background:#8a2f1f;color:#fff;border:1px solid #e8c36a;padding:10px 30px;border-radius:24px;font:inherit;cursor:pointer;letter-spacing:4px;margin:4px}
+#hud{position:fixed;top:10px;left:12px;font-size:12px;line-height:1.7;opacity:.85;text-shadow:0 1px 4px #000;pointer-events:none}
+#quest{position:fixed;top:10px;right:12px;background:#0008;border:1px solid #6a5230;border-radius:10px;padding:8px 12px;font-size:12px;line-height:1.8;pointer-events:none}
+#quest b{color:#e8c36a;display:block;margin-bottom:2px}
+#quest .ok{color:#8fe08f;text-decoration:line-through;opacity:.8}
+#act{position:fixed;bottom:34px;left:50%;transform:translateX(-50%);display:none;background:#8a2f1f;color:#fff;border:1px solid #e8c36a;padding:12px 30px;border-radius:26px;font:inherit;font-size:16px;letter-spacing:3px;cursor:pointer;z-index:5}
+#toast{position:fixed;top:16%;left:50%;transform:translateX(-50%);background:#000b;border:1px solid #e8c36a;padding:10px 22px;border-radius:10px;opacity:0;transition:.4s;pointer-events:none;text-align:center;max-width:85%;z-index:6}
+#tl{position:fixed;top:56px;left:12px;z-index:7;display:flex;flex-direction:column;gap:6px;align-items:flex-start;max-width:calc(100vw - 150px)}
+#music{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;background:#0008;border:1px solid #6a5230;border-radius:16px;padding:5px 12px;font-size:12px}
+#bar{display:none;gap:6px;flex-wrap:wrap}
+.pill{background:#0008;border:1px solid #6a5230;border-radius:16px;padding:5px 12px;font:inherit;font-size:12px;color:#f0e2c0;cursor:pointer}
+.ovl{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:8}
+.ovl .card{background:#1d1610;border:1px solid #e8c36a;border-radius:14px;padding:18px;max-width:440px;width:92%;max-height:84vh;overflow:auto;line-height:1.8;font-size:13px}
+.ovl h3{color:#e8c36a;letter-spacing:4px;text-align:center;margin-bottom:8px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:10px}
+.tabs button{background:#14100c;border:1px solid #6a5230;color:#f0e2c0;border-radius:14px;padding:3px 12px;font:inherit;font-size:12px;cursor:pointer}
+.tabs button.on{background:#8a2f1f;border-color:#e8c36a}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;align-items:center}.g span{opacity:.7}
+.li{border-bottom:1px solid #3a2e20;padding:4px 0}.li small{opacity:.6;display:block}
+#hello{color:#e8c36a;opacity:.9}
+#music button{background:none;border:0;color:#f0e2c0;font:inherit;cursor:pointer;letter-spacing:2px}
+#music input[type=range]{width:70px;padding:0;border:0;background:none;accent-color:#e8c36a}
+#music.on #mnote{animation:spin 3s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+#joy{position:fixed;left:24px;bottom:30px;width:120px;height:120px;border-radius:50%;background:#ffffff18;border:1px solid #ffffff40;display:none}
+#knob{position:absolute;left:40px;top:40px;width:40px;height:40px;border-radius:50%;background:#ffffff70}
+#modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:8}
+#modal .card{background:#1d1610;border:1px solid #e8c36a;border-radius:14px;padding:24px;max-width:340px;width:88%;text-align:center;line-height:1.8}
+#modal h3{color:#e8c36a;letter-spacing:4px;margin-bottom:8px}
+#modal p{font-size:14px;margin-bottom:12px;opacity:.9}
+
+
+/* ===== 手机 / 横屏 / 安全区 ===== */
+:root{--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)}
+html,body{overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+input{-webkit-user-select:text;user-select:text}
+button{touch-action:manipulation}
+#start{justify-content:flex-start;overflow-y:auto}#start>:first-child{margin-top:auto}#start>:last-child{margin-bottom:auto}
+#hud{left:calc(12px + var(--sl))}
+#tl{left:calc(12px + var(--sl))}
+#quest{right:calc(12px + var(--sr));top:calc(10px + var(--st));pointer-events:auto;cursor:pointer;z-index:3}
+#quest b{white-space:nowrap}
+#quest i{font-style:normal;display:inline-block;width:1.3em;opacity:.7}
+#quest .ok{text-decoration:none;opacity:1}
+#quest .ok i{color:#8fe08f;font-weight:700;opacity:1}
+#quest .ok span{text-decoration:line-through;opacity:.75}
+#quest .ok.new i{animation:tick .5s ease-out}
+@keyframes tick{0%{transform:scale(2.6);opacity:0}100%{transform:scale(1);opacity:1}}
+#quest.min .qs{display:none!important}
+#coin{cursor:default;color:#ffe08a}
+#coin.pulse{animation:pulse .6s}
+@keyframes pulse{40%{transform:scale(1.25);box-shadow:0 0 12px #e8c36a}}
+#bmus,#bfs{display:none}
+#joy{left:calc(30px + var(--sl));bottom:calc(28px + var(--sb));width:132px;height:132px;opacity:.38;pointer-events:none;z-index:2;transition:opacity .15s}
+#joy.on{opacity:1;background:#ffffff26}
+#joy.run{border-color:#e8c36a;box-shadow:0 0 14px #e8c36a99}
+#knob{left:calc(50% - 24px);top:calc(50% - 24px);width:48px;height:48px;will-change:transform}
+.touch #joy{display:block}.touch #hud{display:none}
+.touch #bmus,.touch #bfs{display:inline-block}
+.touch #bar{order:-1}
+.touch #tl{top:calc(8px + var(--st));max-width:calc(100vw - 200px - var(--sl))}
+.touch #tl:not(.mopen) #music{display:none}
+.touch .pill{padding:8px 13px;font-size:13px}
+.touch #quest{font-size:11px;line-height:1.55;padding:6px 10px}
+.touch #act{left:auto;right:calc(32px + var(--sr));bottom:calc(36px + var(--sb));transform:none;padding:16px 28px;font-size:18px;box-shadow:0 4px 18px #000a}
+.touch .go{padding:12px 28px}
+.touch .tabs button{padding:6px 14px;font-size:13px}
+.ovl .card{touch-action:pan-y;-webkit-overflow-scrolling:touch;max-height:88vh;max-height:92dvh}
+#rot{display:none;position:fixed;left:50%;bottom:calc(200px + var(--sb));transform:translateX(-50%);z-index:20;background:#000c;border:1px solid #e8c36a;border-radius:20px;padding:8px 16px;font-size:12px;white-space:nowrap}
+@media(orientation:portrait){.touch #rot{display:block}}
+@media(orientation:landscape){.touch #tl{max-width:calc(100vw - 300px - var(--sl))}.touch #quest .qs{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}}
+@media(max-height:520px){#start{gap:8px;padding:10px calc(16px + var(--sr)) 10px calc(16px + var(--sl))}#start h1{font-size:22px;letter-spacing:6px}#start p{font-size:12px}input{padding:8px 12px}.go{padding:9px 26px}.ovl .card{padding:12px;line-height:1.6}.touch #toast{top:calc(10px + var(--st))}}
+/* ===== 商店 / 供桌 ===== */
+.it{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #3a2e20}
+.it .ic{font-size:26px;width:36px;text-align:center;flex:none}
+.it .tx{flex:1;min-width:0;line-height:1.5}
+.it .tx small{display:block;opacity:.6;font-size:11px}
+.buy{flex:none;min-width:76px;padding:9px 10px;border-radius:16px;border:1px solid #e8c36a;background:#8a2f1f;color:#fff;font:inherit;font-size:13px;cursor:pointer}
+.buy.dis{opacity:.45;background:#3a3228}
+#trc{text-align:center;margin-bottom:4px}
+#trm{min-height:20px;text-align:center;color:#8fe08f;font-size:12px;margin-bottom:4px}
+</style>
+</head>
+<body>
+<div id="start">
+  <h1>云游大观音寺</h1>
+  <p>塑一个自己，入寺走一走</p><p id="hello"></p>
+  <input id="nm" maxlength="8" placeholder="你的名字" value="游客">
+  <div class="cols" id="cols">
+    <button data-c="0x3f8f8a" style="background:#3f8f8a" class="on">青衣</button>
+    <button data-c="0xe8e4d8" style="background:#b8b2a0">素白</button>
+    <button data-c="0xd9a441" style="background:#d9a441">杏黄</button>
+  </div>
+  <button class="go" id="go">入　寺</button>
+</div>
+<div id="hud">WASD/方向键 移动　Shift 跑　拖动 转视角<br>E 互动　T 切换昼夜　M 音乐　P 个人中心　N 联机</div>
+<div id="tl"><div id="music"><button id="mbtn"><span id="mnote">♪</span> <span id="mtxt">音乐：关</span></button><button id="mimp">导入歌曲</button><button id="msfx">音效：开</button><input type="range" id="mvol" min="0" max="100" value="50" title="音量"><small id="trk" style="width:100%;opacity:.7"></small></div>
+<div id="bar"><span id="coin" class="pill">🪙 0</span><button class="pill" id="bmus">♪ 音乐</button><button class="pill" id="bpc">个人中心</button><button class="pill" id="bnet">联机</button><button class="pill" id="bfs">全屏</button><span id="online" class="pill" style="display:none;cursor:default"></span></div></div>
+<input type="file" id="mfile" accept="audio/*" style="display:none">
+<audio id="bgm" loop preload="auto" src="xilou-ernv.mp3"></audio>
+<div id="quest"></div>
+<button id="act"></button>
+<div id="toast"></div>
+<div id="joy"><div id="knob"></div></div>
+<div id="modal"><div class="card"><h3 id="mt"></h3><p id="mp"></p><input id="mi" maxlength="24" placeholder="写下你的心愿"><div><button class="go" id="mok">确定</button><button class="go" id="mc" style="background:#3a3228">关闭</button></div></div></div>
+
+<div class="ovl" id="pc"><div class="card"><h3>个人中心</h3><div class="tabs" id="ptabs"></div><div id="pbody"></div><div style="text-align:center;margin-top:10px"><button class="go" id="pclose">关闭</button></div></div></div>
+<div class="ovl" id="np"><div class="card"><h3>联机共修</h3><div id="nstat" style="text-align:center;margin-bottom:8px"></div><input id="nurl" style="width:100%;margin-bottom:6px" placeholder="服务器 ws://..."><input id="nroom" style="width:100%;margin-bottom:8px" maxlength="16" placeholder="房间名"><div style="text-align:center"><button class="go" id="nws">连接服务器</button><button class="go" id="nloc" style="background:#3a5a3a">本机多标签</button><button class="go" id="noff" style="background:#3a3228">断开</button></div><p style="font-size:12px;opacity:.7;margin-top:8px">和朋友联机：在一台电脑上运行 server.js（node server.js），大家填同一个服务器地址和房间名。本机多标签：同一浏览器多开几个标签页即可互相看到，用来试玩。</p><div style="text-align:center"><button class="go" id="nclose" style="background:#3a3228">关闭</button></div></div></div>
+
+<div class="ovl" id="tr"><div class="card"><h3 id="trt"></h3><div id="trc"></div><div id="trm"></div><div id="trb"></div><div style="text-align:center;margin-top:10px"><button class="go" id="trclose" style="background:#3a3228">关闭</button></div></div></div>
+<div id="rot">📱 横屏玩更舒适：请把手机横过来（点一下关闭提示）</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=s=>document.querySelector(s),rnd=Math.random,keys={};
+let robe=0x3f8f8a,started=false,modalOpen=false,night=true;
+if(matchMedia('(pointer:coarse)').matches)document.body.classList.add('touch');
+document.querySelectorAll('#cols button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#cols button').forEach(x=>x.classList.remove('on'));b.classList.add('on');robe=+b.dataset.c});
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+const dayStr=o=>{const d=new Date(Date.now()-o*864e5);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const P=Object.assign({name:'游客',robe:0x3f8f8a,visits:0,first:'',last:'',streak:0,sec:0,sit:0,bell:0,fish:0,lit:0,burn:0,bow:0,boat:0,sign:0,wish:0,talk:0,signs:[],mine:[],coin:60,merit:0,offer:0,bag:{},gift:{},day:{d:'',q:{},lamps:0,alt:{},sit:0,fc:0,bonus:0}},store.get('profile',{}));
+const save=()=>store.set('profile',P);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+if(P.day.d!==dayStr(0))P.day={d:dayStr(0),q:{},lamps:0,alt:{},sit:0,fc:0,bonus:0};
+P.day.alt=P.day.alt||{};P.day.sit=P.day.sit||0;P.day.fc=P.day.fc||0;P.bag=P.bag||{};P.gift=P.gift||{};
+robe=P.robe;$('#nm').value=P.name;document.querySelectorAll('#cols button').forEach(b=>b.classList.toggle('on',+b.dataset.c===P.robe));
+if(P.visits)$('#hello').textContent='欢迎回来，'+P.name+'　第 '+(P.visits+1)+' 次入寺　连续 '+(P.last===dayStr(0)||P.last===dayStr(1)?P.streak:0)+' 天';
+setInterval(()=>{if(started&&!document.hidden){P.sec+=5;save()}},5000);
+addEventListener('pagehide',save);
+
+/* ========== 渲染器与贴图 ========== */
+const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,400);
+const ren=new THREE.WebGLRenderer({antialias:true});
+ren.setSize(innerWidth,innerHeight);ren.setPixelRatio(Math.min(devicePixelRatio,coarse()?1.5:2));
+ren.outputEncoding=THREE.sRGBEncoding;ren.toneMapping=THREE.ACESFilmicToneMapping;ren.toneMappingExposure=1.15;
+ren.shadowMap.enabled=true;ren.shadowMap.type=THREE.PCFSoftShadowMap;
+document.body.appendChild(ren.domElement);
+function fit(){const w=innerWidth,h=innerHeight;cam.aspect=w/h;cam.fov=w/h<1?72:60;cam.updateProjectionMatrix();ren.setSize(w,h)}
+addEventListener('resize',fit);addEventListener('orientationchange',()=>setTimeout(fit,350));fit();
+scene.fog=new THREE.FogExp2(0x15101c,.016);
+
+function tex(w,h,draw,rx=1,ry=1){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);
+ const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;return t}
+const mkGrass=(rx,ry)=>tex(256,256,(c,w,h)=>{c.fillStyle='#2f5030';c.fillRect(0,0,w,h);for(let i=0;i<3000;i++){c.fillStyle=`hsl(${90+rnd()*35},${30+rnd()*25}%,${14+rnd()*16}%)`;c.fillRect(rnd()*w,rnd()*h,2,4)}},rx,ry);
+const mkStone=(rx,ry,b=46)=>tex(256,256,(c,w,h)=>{c.fillStyle=`hsl(35,5%,${b-20}%)`;c.fillRect(0,0,w,h);for(let y=0;y<4;y++)for(let x=0;x<4;x++){c.fillStyle=`hsl(35,${4+rnd()*6}%,${b+rnd()*14}%)`;c.fillRect(x*64+2,y*64+2,60,60)}for(let i=0;i<700;i++){c.fillStyle=`rgba(0,0,0,${rnd()*.14})`;c.fillRect(rnd()*w,rnd()*h,2,2)}},rx,ry);
+const mkTile=(rx,ry)=>tex(128,128,(c,w,h)=>{c.fillStyle='#3a474e';c.fillRect(0,0,w,h);for(let x=0;x<w;x+=16){c.fillStyle='#232d33';c.fillRect(x,0,3,h)}for(let y=0;y<h;y+=16){c.fillStyle='#4a5a62';c.fillRect(0,y,w,2)}},rx,ry);
+const mkRed=(rx,ry)=>tex(128,128,(c,w,h)=>{c.fillStyle='#9a2f22';c.fillRect(0,0,w,h);for(let i=0;i<60;i++){c.fillStyle=`rgba(${rnd()<.5?'0,0,0':'255,160,120'},${rnd()*.1})`;c.fillRect(rnd()*w,0,1+rnd()*2,h)}},rx,ry);
+const mkSky=(stops)=>tex(8,256,(c,w,h)=>{const g=c.createLinearGradient(0,0,0,h);stops.forEach((s,i)=>g.addColorStop(i/(stops.length-1),s));c.fillStyle=g;c.fillRect(0,0,w,h)});
+
+const M=(c,e=0,map=null)=>new THREE.MeshStandardMaterial({color:c,roughness:.85,emissive:e,emissiveIntensity:e?1:0,map});
+function put(m,p,x,y,z,sh=true){m.position.set(x,y,z);m.castShadow=sh;m.receiveShadow=true;p.add(m);return m}
+const box=(w,h,d,c,x,y,z,p=scene,e=0,map=null)=>put(new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c,e,map)),p,x,y,z);
+const cyl=(rt,rb,h,c,x,y,z,p=scene,seg=16,e=0,map=null)=>put(new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg),M(c,e,map)),p,x,y,z);
+const sph=(r,c,x,y,z,p=scene,e=0)=>put(new THREE.Mesh(new THREE.SphereGeometry(r,16,12),M(c,e)),p,x,y,z);
+const cone=(r,h,c,x,y,z,p=scene,seg=8,e=0)=>put(new THREE.Mesh(new THREE.ConeGeometry(r,h,seg),M(c,e)),p,x,y,z);
+// 歇山式屋顶：四棱台，旋转45°对齐，z向压扁；四角起翘
+const tileT=mkTile(8,2);
+function roof(rb,rt,h,sz,x,y,z,p){const m=put(new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,4),M(0xffffff,0,tileT)),p,x,y,z);m.rotation.y=Math.PI/4;m.scale.z=sz;
+ const a=rb/Math.SQRT2;[-1,1].forEach(sx=>[-1,1].forEach(s2=>{const c=cone(.3,1.8,0x2a3238,sx*a,y-h/2+.3,s2*a*sz,p);c.rotation.z=-sx*.7;c.rotation.x=s2*.7}))}
+
+/* ========== 光照、天空、昼夜 ========== */
+const hemi=new THREE.HemisphereLight(0x7080b8,0x2a1c14,.75);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xbcc8ff,.45);sun.position.set(-30,60,25);sun.castShadow=true;
+sun.shadow.mapSize.set(coarse()?1024:2048,coarse()?1024:2048);Object.assign(sun.shadow.camera,{left:-70,right:70,top:70,bottom:-70,near:1,far:200});sun.shadow.bias=-.0005;scene.add(sun);
+function coarse(){return matchMedia('(pointer:coarse)').matches}
+const pl=[];function warm(x,y,z,i=1.2,d=34){const l=new THREE.PointLight(0xffb060,i,d);l.position.set(x,y,z);l.userData.b=i;scene.add(l);pl.push(l);return l}
+const skyT=[mkSky(['#04050c','#14121f','#3a2428','#6a3a30']),mkSky(['#3f78c8','#86b4e6','#d4e2ee','#f4e6cc'])];
+const sky=new THREE.Mesh(new THREE.SphereGeometry(300,24,16),new THREE.MeshBasicMaterial({map:skyT[0],side:THREE.BackSide,fog:false}));scene.add(sky);
+const stars=(()=>{const g=new THREE.BufferGeometry(),a=[];for(let i=0;i<700;i++){const t=rnd()*6.28,e=.15+rnd()*1.2,r=280;a.push(Math.cos(t)*Math.cos(e)*r,Math.sin(e)*r,Math.sin(t)*Math.cos(e)*r)}
+ g.setAttribute('position',new THREE.Float32BufferAttribute(a,3));const p=new THREE.Points(g,new THREE.PointsMaterial({color:0xfff2c8,size:1.4,fog:false,sizeAttenuation:false}));scene.add(p);return p})();
+const moonM=new THREE.Mesh(new THREE.SphereGeometry(9,24,16),new THREE.MeshBasicMaterial({color:0xfff3c8,fog:false}));moonM.position.set(-120,130,-200);scene.add(moonM);
+function setTime(n){night=n;sky.material.map=skyT[n?0:1];scene.fog.color.set(n?0x15101c:0xb4c6d8);scene.fog.density=n?.016:.008;
+ hemi.intensity=n?.75:1.15;hemi.color.set(n?0x7080b8:0xd0e0ff);sun.color.set(n?0xbcc8ff:0xfff0d0);sun.intensity=n?.45:1.6;
+ stars.visible=moonM.visible=n;pl.forEach(l=>l.intensity=l.userData.b*(n?1:.15));scene.background=null;ambUpdate()}
+const LS=()=>night?1:.15;
+
+/* ========== 碰撞 ========== */
+const col=[],cc=(x,z,r)=>col.push({t:0,x,z,r}),cb=(x,z,hx,hz)=>col.push({t:1,x,z,hx,hz});
+function resolve(p,pr){for(let k=0;k<2;k++)for(const c of col){
+ if(c.t===0){const dx=p.x-c.x,dz=p.z-c.z,d=Math.hypot(dx,dz),m=c.r+pr;if(d<m){if(d<1e-4)p.x+=m;else{p.x+=dx/d*(m-d);p.z+=dz/d*(m-d)}}}
+ else{const qx=Math.max(c.x-c.hx,Math.min(p.x,c.x+c.hx)),qz=Math.max(c.z-c.hz,Math.min(p.z,c.z+c.hz)),dx=p.x-qx,dz=p.z-qz,d=Math.hypot(dx,dz);
+  if(d<pr){if(d>1e-4){p.x+=dx/d*(pr-d);p.z+=dz/d*(pr-d)}else{const ox=c.hx-Math.abs(p.x-c.x),oz=c.hz-Math.abs(p.z-c.z);if(ox<oz)p.x+=(p.x>c.x?1:-1)*(ox+pr);else p.z+=(p.z>c.z?1:-1)*(oz+pr)}}}}}
+function hgt(x,z){if(Math.abs(x)<13&&z<.5&&z>-16.5)return .9;if(Math.abs(x)<4&&z>=.5&&z<2.9)return .9*(2.9-z)/2.4;return 0}
+
+/* ========== 地面、路、围墙 ========== */
+{const g=new THREE.Mesh(new THREE.PlaneGeometry(300,300),M(0xffffff,0,mkGrass(70,70)));g.rotation.x=-Math.PI/2;g.receiveShadow=true;scene.add(g)}
+const sT=()=>mkStone(4,40);box(7,.1,92,0xffffff,0,.05,0,scene,0,mkStone(3,38));
+box(50,.1,26,0xffffff,0,.04,-6,scene,0,mkStone(22,12));box(46,.1,24,0xffffff,0,.06,-30,scene,0,mkStone(20,10));
+[-18,18].forEach(x=>box(3.5,.1,40,0xffffff,x,.05,-8,scene,0,mkStone(2,18)));
+// 围墙（山门两侧）
+[-1,1].forEach(s=>{const wx=s*25;box(41,3.6,.9,0xd8cdb8,wx,1.8,38,scene);box(41.6,.5,1.4,0x2e3a40,wx,3.8,38,scene);cb(wx,38,20.5,.6)});
+// 山门
+{const g=new THREE.Group();g.position.set(0,0,38);scene.add(g);const red=mkRed(1,3);
+ [-3.6,3.6].forEach(x=>{cyl(.5,.55,7,0xffffff,x,3.5,0,g,16,0,red);cc(x,38,.7)});
+ box(9.6,.8,1.2,0x7a2418,0,6.6,0,g);box(8,1.8,.6,0x2a1a15,0,7.9,0,g,0x4a2a08);
+ roof(7.6,3.2,2.6,.4,0,10,0,g);[-1,1].forEach(s=>{const l=sph(.45,0xd4401f,s*2,5.3,0,g,0xd4401f);l.scale.y=1.2});
+ warm(0,5,36,.9,20)}
+
+/* ========== 大雄宝殿 ========== */
+{const g=new THREE.Group();g.position.set(0,0,-8);scene.add(g);const red=mkRed(4,1),st=mkStone(8,5,50);
+ box(26,.9,17,0xffffff,0,.45,0,g,0,st);
+ box(22,7,.8,0xffffff,0,4.4,-6,g,0,red);[-10.6,10.6].forEach(x=>box(.8,7,12,0xffffff,x,4.4,0,g,0,red));
+ for(let i=0;i<6;i++){const x=-10+i*4;cyl(.4,.45,7,0xffffff,x,4.4,6,g,16,0,red);cc(x,-2,.55);const l=sph(.4,0xd4401f,x,7.2,6.9,g,0xd4401f);l.scale.y=1.25}
+ box(22.8,.7,1,0x6a1f16,0,8.25,6,g);box(27.4,.35,17.4,0x2e1a14,0,8.05,0,g);
+ roof(19,11,4,.62,0,9.9,0,g);box(15,2.4,9.4,0xffffff,0,13.1,0,g,0,red);box(18,.3,11.4,0x2e1a14,0,14.4,0,g);
+ roof(12.5,.3,4.5,.62,0,16.55,0,g);sph(.6,0xe8c36a,0,19,0,g,0x9a7a20);cyl(.15,.15,1.5,0xe8c36a,0,18.3,0,g,8,0x9a7a20);
+ // 踏步与栏杆
+ [[.3,2.5],[.6,1.7],[.9,.9]].forEach(([h,z])=>box(8,h,.8,0xffffff,0,h/2,z,scene,0,st));
+ [[-8.7,.5,8.6,.25],[8.7,.5,8.6,.25]].forEach(([x,z,w,d])=>box(w,.6,d,0xcfc6b4,x,1.2,z,scene));
+ [-1,1].forEach(s=>box(.25,.6,17,0xcfc6b4,s*13,1.2,-8,scene));box(26,.6,.25,0xcfc6b4,0,1.2,-16.5,scene);
+ // 碰撞：墙、平台边
+ cb(0,-14,11,.6);cb(-10.6,-8,.6,6);cb(10.6,-8,.6,6);cb(-13.5,-8,.5,8.8);cb(13.5,-8,.5,8.8);cb(0,-17,14,.5);cb(-8.8,.9,4.8,.4);cb(8.8,.9,4.8,.4);
+ // 殿内：佛像、供桌
+ const b=new THREE.Group();b.position.set(0,.9,-12.8);b.scale.setScalar(1.3);scene.add(b);
+ cyl(2.2,2.5,.7,0xcfa84a,0,.35,0,b,20,0x5a4010);const lp=new THREE.Mesh(new THREE.LatheGeometry([[0,0],[1.5,0],[1.2,1.8],[.8,3],[0,3.2]].map(p=>new THREE.Vector2(p[0],p[1])),20),M(0xe8c36a,0x7a5a14));put(lp,b,0,.7,0);
+ sph(.6,0xe8c36a,0,4.4,0,b,0x7a5a14);sph(.12,0x222222,0,5.1,0,b);cc(0,-12.8,2.6);
+ box(5,1,1.4,0x5a2a18,0,1.4,-9.8,scene);cb(0,-9.8,2.6,.8);[-1.5,1.5].forEach(x=>{cyl(.1,.1,.5,0xfff0c0,x,2.15,-9.8,scene,8,0xffcc66)});
+ warm(0,5,-6,1.6,32)}
+
+/* 殿内：木鱼与签筒 */
+{box(1.6,.12,1.6,0x7a1f18,5,1,-6);const f=sph(.45,0xb86a2a,5,1.45,-6);f.scale.set(1,.8,1.2);cc(5,-6,.8);
+ box(1.6,.12,1.6,0x7a1f18,-5,1,-6);cyl(.3,.3,.9,0x8a4a22,-5,1.5,-6,scene,12);for(let i=0;i<7;i++){const s=box(.04,.7,.04,0xd8b070,-5+(i-3)*.07,2.2,-6);s.rotation.z=(i-3)*.07}cc(-5,-6,.8)}
+
+/* ========== 大观音像 ========== */
+const statue=new THREE.Group();statue.position.set(0,0,-38);statue.scale.setScalar(1.7);scene.add(statue);
+{const G=0xe8c36a,E=0x7a5a14,W=0xf4ecd8;cyl(5.5,6.5,1.4,0xffffff,0,.7,0,statue,24,0,mkStone(6,2,50));
+ for(let i=0;i<14;i++){const a=i/14*6.28,pg=new THREE.Group();pg.rotation.y=a;statue.add(pg);const p=cone(.9,2.4,0xf0a8c0,4.6,1.9,0,pg,6,0x6a2a40);p.scale.z=.45;p.rotation.z=-1.05}
+ cyl(3.4,4.4,.6,0xcfa84a,0,1.7,0,statue,24,E);
+ put(new THREE.Mesh(new THREE.LatheGeometry([[0,0],[3.4,0],[3.1,2],[2.3,5],[1.8,8],[1.3,9.4],[.9,10],[0,10.2]].map(p=>new THREE.Vector2(p[0],p[1])),28),M(W,0x303028)),statue,0,2,0);
+ const sh=new THREE.Mesh(new THREE.TorusGeometry(1.6,.28,8,24),M(G,E));sh.rotation.x=Math.PI/2;put(sh,statue,0,10,0);
+ sph(1.25,W,0,12.4,0,statue,0x383830);cone(.18,.9,0x222230,0,13.9,0,statue,8);sph(.5,0x222230,0,13.5,0,statue);
+ const cr=new THREE.Mesh(new THREE.TorusGeometry(1.05,.12,6,16),M(G,E));cr.rotation.x=Math.PI/2;put(cr,statue,0,13.2,0);
+ const halo=new THREE.Mesh(new THREE.TorusGeometry(2.8,.12,8,48),M(G,0xffcc55));put(halo,statue,0,12.8,-.7);
+ const aura=new THREE.Mesh(new THREE.CircleGeometry(2.7,32),new THREE.MeshBasicMaterial({color:0xffe9a0,transparent:true,opacity:.16,side:THREE.DoubleSide}));aura.position.set(0,12.8,-.75);statue.add(aura);
+ sph(.55,W,0,9,2.2,statue,0x222222);cyl(.45,.45,.9,G,.5,9,1.6,statue,10,E);
+ const l=new THREE.SpotLight(0xffe0a0,2.4,80,.55,.6);l.position.set(0,12,-14);l.target.position.set(0,12,-38);scene.add(l,l.target);
+ cc(0,-38,9.6)}
+
+/* ========== 钟楼 ========== */
+const bellG=new THREE.Group();
+{const g=new THREE.Group();g.position.set(-15,0,12);scene.add(g);const red=mkRed(1,2);
+ box(8,.4,8,0xffffff,0,.2,0,g,0,mkStone(3,3,50));
+ [[-3,-3],[3,-3],[-3,3],[3,3]].forEach(([x,z])=>{cyl(.35,.4,6,0xffffff,x,3.4,z,g,12,0,red);cc(-15+x,12+z,.5)});
+ box(7.2,.6,7.2,0x6a1f16,0,6.6,0,g);box(6.4,.3,.3,0x5a2a18,0,5.8,0,g);roof(6.6,2.4,2.4,1,0,8.4,0,g);
+ bellG.position.set(0,5.7,0);g.add(bellG);cyl(.04,.04,.7,0x333333,0,-.35,0,bellG,6);
+ put(new THREE.Mesh(new THREE.CylinderGeometry(.55,.95,1.8,24),M(0xb8892f,0x3a2a08)),bellG,0,-1.5,0);
+ warm(-15,4,12,.9,18)}
+
+/* ========== 香炉 / 莲灯 / 沿路灯笼 ========== */
+const burner=new THREE.Group();burner.position.set(0,0,24);scene.add(burner);
+{box(3.6,.5,3.6,0xffffff,0,.25,0,burner,0,mkStone(2,2,52));cyl(1.5,1.1,1.8,0x9a7a2a,0,1.4,0,burner,20,0x2a1c04);[-.5,0,.5].forEach(x=>cyl(.04,.04,1.4,0x7a3a1a,x,3,0,burner,6));cc(0,24,2.1)}
+const fireL=new THREE.PointLight(0xff8a3a,0,14);fireL.position.set(0,3.4,24);scene.add(fireL);
+const smokeG=new THREE.SphereGeometry(1,8,6),parts=[];
+function puff(x,y,z,col,vx,vy,vz,life,grow,sz=.14){const m=new THREE.Mesh(smokeG,new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.6}));m.scale.setScalar(sz);m.position.set(x,y,z);m.userData={vx,vy,vz,life,l:life,grow};scene.add(m);parts.push(m)}
+const lamps=[];for(let i=0;i<6;i++){const x=10+(i%3)*3,z=8+Math.floor(i/3)*3.5;cyl(.08,.08,1.2,0x6a4a22,x,.6,z,scene,6);const s=sph(.55,0x4a3426,x,1.6,z);s.scale.y=1.2;lamps.push(s);cc(x,z,.4)}
+const lampL=new THREE.PointLight(0xffa030,0,14);lampL.position.set(13,2.2,10);scene.add(lampL);
+for(let z=34;z>-4;z-=8)[-4.4,4.4].forEach(x=>{cyl(.07,.07,3,0x4a3020,x,1.5,z,scene,6);const s=sph(.4,0xd4401f,x,3.2,z,scene,0xd4401f);s.scale.y=1.2;cc(x,z,.2)});
+
+/* ========== 莲池与河灯 ========== */
+const PX=21,PZ=-14,boats=[];
+{const w=new THREE.Mesh(new THREE.CircleGeometry(5.9,40),new THREE.MeshStandardMaterial({color:0x0e3646,roughness:.08,metalness:.35}));w.rotation.x=-Math.PI/2;w.position.set(PX,.12,PZ);w.receiveShadow=true;scene.add(w);
+ const r=new THREE.Mesh(new THREE.TorusGeometry(6.1,.5,8,40),M(0xffffff,0,mkStone(12,1,50)));r.rotation.x=Math.PI/2;put(r,scene,PX,.3,PZ);cc(PX,PZ,6.3);
+ for(let i=0;i<14;i++){const a=rnd()*6.28,d=rnd()*5,x=PX+Math.cos(a)*d,z=PZ+Math.sin(a)*d;cyl(.55,.55,.05,0x2f6a38,x,.16,z,scene,12);if(i%3==0){const f=cone(.28,.5,0xf4a0c0,x,.45,z,scene,8,0x7a3050);f.rotation.x=Math.PI}}}
+function floatLamp(){if(boats.length>=20){const o=boats.shift().m;o.parent.remove(o)}
+ const m=new THREE.Group();cyl(.35,.2,.15,0x8a5a30,0,0,0,m,8);const f=cone(.2,.4,0xffd070,0,.28,0,m,6,0xffa030);m.position.set(PX,.2,PZ+5.5);scene.add(m);boats.push({m,a:Math.PI/2,r:5.5-rnd()*3,s:.12+rnd()*.12})}
+
+/* ========== 许愿树 ========== */
+const wishTags=[],TX=-20,TZ=-14;
+{cyl(.7,1,5,0x4a3020,TX,2.5,TZ,scene,10);cc(TX,TZ,1.2);[[0,6.5,0,4],[2,5.5,1,3],[-2.2,5.8,-1,3.2]].forEach(([x,y,z,r])=>sph(r,0x8a8a2a,TX+x,y,TZ+z,scene,0x2a2808));warm(TX,4,TZ+3,.8,16)}
+function addTag(i){const m=box(.3,.55,.05,0xb73a26,0,0,0,scene,0x300808),a=rnd()*6.28,r=2+rnd()*2.5;m.position.set(TX+Math.cos(a)*r,3.4+rnd()*1.6,TZ+Math.sin(a)*r);wishTags.push(m)}
+let wishes=store.get('wishes',['愿家人平安健康','愿所求皆如愿','愿岁月温柔']);wishes.forEach(()=>addTag());
+
+/* ========== 树 / 萤火虫 ========== */
+for(let i=0;i<46;i++){const x=(rnd()<.5?-1:1)*(8+rnd()*44),z=-48+rnd()*84;
+ if((Math.abs(x)<12&&z>-22)||(Math.abs(x)<17&&z<4&&z>-20)||Math.hypot(x-PX,z-PZ)<9||Math.hypot(x-TX,z-TZ)<7||Math.hypot(x+15,z-12)<7||Math.hypot(x-12,z-10)<6||(Math.abs(x)<26&&z<-20&&z>-52)||(Math.abs(Math.abs(x)-14)<7&&z>15&&z<37))continue;
+ const h=3+rnd()*3;cyl(.25,.35,2.4,0x4a3020,x,1.2,z,scene,6);cone(1.8,h,0x1b3a22,x,2.2+h/2,z,scene,8);cone(1.3,h*.7,0x23482a,x,2.2+h*.9,z,scene,8);cc(x,z,.5)}
+const ff=(()=>{const n=50,g=new THREE.BufferGeometry(),a=new Float32Array(n*3);for(let i=0;i<n;i++){a[i*3]=(rnd()-.5)*90;a[i*3+1]=.5+rnd()*3;a[i*3+2]=-40+rnd()*70}
+ g.setAttribute('position',new THREE.BufferAttribute(a,3));const p=new THREE.Points(g,new THREE.PointsMaterial({color:0xd8ff80,size:.35,transparent:true,opacity:.9}));scene.add(p);return p})();
+
+/* ========== 修行座位（蒲团） ========== */
+const SEATS=[];[[-16.5,-23.5,0,-38],[-11.5,-23.5,0,-38],[-6.5,-23.5,0,-38],[6.5,-23.5,0,-38],[11.5,-23.5,0,-38],[16.5,-23.5,0,-38],[21,-6.4,21,-14],[28.6,-14,21,-14],[-20,-7.8,-20,-14],[-26.2,-14,-20,-14]].forEach(([x,z,tx,tz])=>{cyl(.8,.85,.16,0x8a2f1f,x,.08,z,scene,20);cyl(.62,.7,.12,0xd9a441,x,.2,z,scene,20,0x3a2808);SEATS.push({x,z,f:Math.atan2(tx-x,tz-z)})});
+
+/* ========== 角色（玩家与僧人） ========== */
+function spriteText(t){const cv=document.createElement('canvas');cv.width=256;cv.height=64;const c=cv.getContext('2d');c.font='bold 34px sans-serif';c.textAlign='center';c.fillStyle='#fff3c8';c.strokeStyle='#000';c.lineWidth=5;c.strokeText(t,128,44);c.fillText(t,128,44);
+ const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),depthTest:false,fog:false}));s.scale.set(2.4,.6,1);s.position.y=3.1;return s}
+function makeChar(rc,bald,name){const g=new THREE.Group(),b=new THREE.Group();g.add(b);const o={g,b};
+ cyl(.34,.5,1.3,rc,0,1.15,0,b,14);sph(.3,0xf0cfa8,0,2.05,0,b);
+ if(!bald){const h=sph(.33,0x1a1410,0,2.12,-.04,b);h.scale.set(1,.85,1);sph(.12,0x1a1410,0,2.42,-.05,b)}
+ [o.aL,o.aR]=[-1,1].map(s=>{const p=new THREE.Group();p.position.set(s*.42,1.7,0);b.add(p);cyl(.08,.1,.8,rc,0,-.35,0,p,8);sph(.09,0xf0cfa8,0,-.78,0,p);return p});
+ [o.lL,o.lR]=[-1,1].map(s=>{const p=new THREE.Group();p.position.set(s*.17,.6,0);b.add(p);cyl(.1,.1,.6,0x2a2a30,0,-.3,0,p,8);return p});
+ g.add(o.lab=spriteText(name));return o}
+const me={x:0,z:46,face:Math.PI,walk:0,o:null,seat:-1,sit:0};
+const monk=makeChar(0xc98a2e,true,'僧人');monk.g.position.set(2.7,0,32);scene.add(monk.g);
+
+const mk={z:32,dir:-1,pause:0,face:Math.PI,walk:0};
+
+/* ========== 商店街：四间可以走进去的商铺 + 供品 + 供桌进贡 ========== */
+const GOODS={
+ xiang:{n:'清香',e:'🌿',p:5,m:2,k:'stick',c:0xc9a463,d:'三支清香，心诚则灵'},
+ zhu:{n:'红烛',e:'🕯️',p:6,m:2,k:'candle',c:0xd43a2a,d:'一对红烛，照亮前路'},
+ gao:{n:'大高香',e:'🔥',p:18,m:8,k:'stick',c:0x8a2f1f,d:'高香一炷，愿力远行'},
+ lian:{n:'莲花',e:'🌸',p:8,m:3,k:'flower',c:0xf4a0c0,d:'一束莲花，清净无染'},
+ guo:{n:'时令鲜果',e:'🍎',p:6,m:2,k:'fruit',c:0xd9442a,d:'一盘鲜果，供养三宝'},
+ lan:{n:'百合花篮',e:'💐',p:16,m:6,k:'flower',c:0xf4ecd8,d:'花香满篮，庄严殿堂'},
+ zhai:{n:'素斋点心',e:'🍡',p:8,m:3,k:'cake',c:0xe8c88a,d:'素糕一碟，清甜不腻'},
+ cha:{n:'清茶一盏',e:'🍵',p:5,m:2,k:'cup',c:0x6a9a4a,d:'一盏清茶，涤尽尘虑'},
+ you:{n:'供灯油',e:'🪔',p:10,m:4,k:'lamp',c:0xffc040,d:'添一勺灯油，长明不灭'},
+ fu:{n:'平安符',e:'🧧',p:15,m:6,k:'tag',c:0xc4301f,d:'随身携带，出入平安'},
+ jing:{n:'经书',e:'📜',p:18,m:7,k:'book',c:0x2a4a6a,d:'一卷经书，供于佛前'},
+ chuan:{n:'菩提手串',e:'📿',p:28,m:12,k:'beads',c:0x7a4a22,d:'十八颗菩提子，静心守念'}
+},GKEYS=Object.keys(GOODS),bagN=k=>P.bag[k]||0;
+
+function goodMesh(k,c){const g=new THREE.Group();
+ if(k==='stick'){for(let i=0;i<3;i++)cyl(.025,.025,.55,c,(i-1)*.05,.3,0,g,6);cyl(.1,.12,.1,0x6a4a22,0,.05,0,g,10)}
+ else if(k==='candle'){cyl(.06,.06,.4,c,0,.2,0,g,8);cone(.05,.14,0xffd070,0,.47,0,g,6,0xffa030)}
+ else if(k==='flower'){cyl(.12,.1,.1,0x2f6a38,0,.05,0,g,10);[[0,.28,0],[-.1,.22,.04],[.1,.22,-.04]].forEach(([x,y,z])=>{const f=cone(.14,.2,c,x,y,z,g,8,0x3a1a28);f.rotation.x=Math.PI})}
+ else if(k==='fruit'){cyl(.2,.22,.04,0xe8e0d0,0,.02,0,g,12);[[0,.14,0],[-.1,.12,.05],[.1,.12,-.05],[0,.24,.02]].forEach(([x,y,z])=>sph(.09,c,x,y,z,g))}
+ else if(k==='cake'){cyl(.2,.22,.03,0xe8e0d0,0,.015,0,g,12);[[-.07,0],[.07,0],[0,.08]].forEach(([x,z],i)=>box(.12,.08,.12,c,x,.07+i*.02,z,g))}
+ else if(k==='cup'){cyl(.1,.07,.12,0xe8e4d8,0,.06,0,g,10);cyl(.085,.085,.01,c,0,.115,0,g,10)}
+ else if(k==='lamp'){cyl(.1,.07,.1,0x8a5a30,0,.05,0,g,8);cone(.07,.16,c,0,.18,0,g,6,0xffa030)}
+ else if(k==='tag'){box(.16,.26,.025,c,0,.18,0,g,0x300808);box(.08,.08,.03,0xe8c36a,0,.2,0,g)}
+ else if(k==='book'){box(.22,.06,.3,c,0,.03,0,g);box(.2,.04,.28,0xf4ecd8,0,.08,0,g)}
+ else{const t=new THREE.Mesh(new THREE.TorusGeometry(.1,.035,6,14),M(c));t.rotation.x=Math.PI/2;put(t,g,0,.04,0)}
+ g.traverse(o=>{o.castShadow=false});return g}
+
+function signTex(t){const cv=document.createElement('canvas');cv.width=320;cv.height=120;const c=cv.getContext('2d');
+ c.fillStyle='#3a1610';c.fillRect(0,0,320,120);c.strokeStyle='#e8c36a';c.lineWidth=6;c.strokeRect(6,6,308,108);
+ c.fillStyle='#f4d78a';c.font='bold '+(t.length>3?46:62)+'px "Noto Serif SC","Songti SC",SimSun,serif';c.textAlign='center';c.textBaseline='middle';c.fillText(t,160,64);
+ const x=new THREE.CanvasTexture(cv);x.encoding=THREE.sRGBEncoding;return x}
+
+const SHOP_DEF=[
+ {name:'香烛铺',cx:-14,cz:31.5,s:1,wall:0xa83a24,kc:0xb07a3a,items:['xiang','zhu','gao'],say:'施主请进，香烛俱全'},
+ {name:'花果铺',cx:-14,cz:22,s:1,wall:0xc4708a,kc:0x4a7a5a,items:['lian','guo','lan'],say:'鲜花时果，刚摘的'},
+ {name:'素斋坊',cx:14,cz:31.5,s:-1,wall:0xc9a463,kc:0x7a5a8a,items:['zhai','cha','you'],say:'素斋清茶，随喜品尝'},
+ {name:'法物流通处',cx:14,cz:22,s:-1,wall:0x3f7a7a,kc:0x3a5a8a,items:['fu','jing','chuan'],say:'平安符与经书，请自选'}
+],SHOPS=[];
+const shopL=new THREE.PointLight(0xffb060,0,16);scene.add(shopL);
+// 每间铺子 8×7，门朝参道（s=1 门朝 +x，s=-1 门朝 -x）；进门后屋顶隐藏、墙体半透明
+SHOP_DEF.forEach(d=>{const cx=d.cx,cz=d.cz,s=d.s,g=new THREE.Group();g.position.set(cx,0,cz);scene.add(g);
+ const wm=new THREE.MeshStandardMaterial({color:d.wall,roughness:.85,transparent:true}),
+ W=(w,h,dp,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,dp),wm);m.position.set(s*x,y,z);m.castShadow=m.receiveShadow=true;g.add(m)};
+ const fl=new THREE.Mesh(new THREE.BoxGeometry(8,.08,7),M(0x6a4a2c,0x2a1808));fl.position.y=.04;fl.receiveShadow=true;g.add(fl);
+ W(.4,3.6,7,-3.8,1.8,0);W(8,3.6,.4,0,1.8,-3.3);W(8,3.6,.4,0,1.8,3.3);W(.4,3.6,2.2,3.8,1.8,-2.4);W(.4,3.6,2.2,3.8,1.8,2.4);W(.4,1.1,2.6,3.8,3.05,0);
+ cb(cx-s*3.8,cz,.25,3.5);cb(cx,cz-3.3,4,.25);cb(cx,cz+3.3,4,.25);cb(cx+s*3.8,cz-2.4,.25,1.1);cb(cx+s*3.8,cz+2.4,.25,1.1);cb(cx-s*2,cz,.65,2.6);
+ [-1.45,1.45].forEach(z=>cyl(.2,.2,3.7,0x8a2418,s*3.95,1.85,z,g,12));
+ const rg=new THREE.Group();g.add(rg);roof(6.2,1.3,1.9,.9,0,4.55,0,rg);sph(.28,0xe8c36a,0,5.7,0,rg,0x9a7a20);
+ const sg=new THREE.Mesh(new THREE.PlaneGeometry(2.5,.94),new THREE.MeshBasicMaterial({map:signTex(d.name)}));sg.position.set(s*4.03,3.05,0);sg.rotation.y=s*Math.PI/2;g.add(sg);
+ [-1,1].forEach(z=>{const l=sph(.3,0xd4401f,s*4.3,2.7,z*1.9,g,0xd4401f);l.scale.y=1.2});
+ cyl(.02,.02,.5,0x333333,0,3.35,0,g,4);sph(.3,0xffd070,0,3.05,0,g,0xffb040);
+ box(1.1,1.1,5,0x6a3a20,-s*2,.55,0,g);box(1.3,.1,5.2,0x3a2214,-s*2,1.13,0,g);box(.35,.1,5.6,0x5a3a20,-s*3.4,1.7,0,g);
+ d.items.forEach((k,i)=>{const o=goodMesh(GOODS[k].k,GOODS[k].c);o.position.set(-s*2,1.18,(i-1)*1.4);o.scale.setScalar(1.5);g.add(o)});
+ [-2.2,-1.3,1.3,2.2].forEach((z,i)=>{const k=d.items[i%d.items.length],o=goodMesh(GOODS[k].k,GOODS[k].c);o.position.set(-s*3.4,1.75,z);o.scale.setScalar(1.6);g.add(o)});
+ const kp=makeChar(d.kc,false,'掌柜');kp.g.position.set(cx-s*2.95,0,cz);kp.g.rotation.y=s*Math.PI/2;scene.add(kp.g);
+ SHOPS.push(Object.assign(d,{wm,rg}))});
+
+let curShop=null;
+function shopTick(dt){let inn=null;for(const d of SHOPS)if(Math.abs(me.x-d.cx)<3.9&&Math.abs(me.z-d.cz)<3.4){inn=d;break}
+ if(inn!==curShop){curShop=inn;if(inn){toast('走进「'+inn.name+'」　'+inn.say+'　走到柜台前选购');shopL.position.set(inn.cx,3,inn.cz)}}
+ SHOPS.forEach(d=>{const on=d===curShop;d.rg.visible=!on;d.wm.opacity+=((on?.15:1)-d.wm.opacity)*Math.min(1,dt*8)});
+ shopL.intensity+=((curShop?1.5*(night?1:.6):0)-shopL.intensity)*Math.min(1,dt*6)}
+
+// 供桌上的供品：当天供奉的东西会摆在大殿供桌上
+const altarG=new THREE.Group();scene.add(altarG);
+function addAltar(k,n){if(n>5)return;const i=GKEYS.indexOf(k),m=goodMesh(GOODS[k].k,GOODS[k].c);m.position.set(-2+(i%6)*.8+(n%3-1)*.13,1.9,-9.45-(i/6|0)*.7-(n/3|0)*.16);m.scale.setScalar(1.15);altarG.add(m)}
+Object.keys(P.day.alt).forEach(k=>{if(GOODS[k])for(let i=0;i<P.day.alt[k]&&i<6;i++)addAltar(k,i)});
+function altarFx(k){const sk=GOODS[k].k==='stick';for(let i=0;i<(sk?10:16);i++)puff((rnd()-.5)*3,2.3,-9.6,sk?0xdddddd:0xffe08a,(rnd()-.5)*.8,.9+rnd()*1.1,(rnd()-.5)*.4,sk?3:1.6,sk?.5:-.4,.1)}
+
+/* 买东西 / 进贡 面板 */
+let trMode=null,trShop=null;
+function coinUI(){const e=$('#coin');e.textContent='🪙 '+P.coin;e.classList.remove('pulse');void e.offsetWidth;e.classList.add('pulse')}
+function fishCoin(){if(P.day.fc<20){P.day.fc++;P.coin++;coinUI();save()}}
+function openShop(d){trMode='shop';trShop=d;$('#trm').textContent='';openP('#tr');renderTR()}
+function openAltar(){trMode='altar';trShop=null;$('#trm').textContent='';openP('#tr');renderTR()}
+function renderTR(){const coin='香火钱 <b style="color:#ffe08a">🪙 '+P.coin+'</b>';
+ if(trMode==='shop'){$('#trt').textContent=trShop.name;$('#trc').innerHTML=coin;
+  $('#trb').innerHTML=trShop.items.map(k=>{const g=GOODS[k],no=P.coin<g.p;return `<div class="it"><span class="ic">${g.e}</span><div class="tx"><b>${g.n}</b><small>${g.d}　·　背包 ${bagN(k)}</small></div><button class="buy${no?' dis':''}" data-k="${k}">🪙 ${g.p}</button></div>`}).join('')}
+ else{const have=GKEYS.filter(k=>bagN(k)>0);$('#trt').textContent='佛前供桌';$('#trc').innerHTML='累计功德 <b style="color:#ffe08a">'+P.merit+'</b>　今日已供 '+Object.values(P.day.alt).reduce((a,b)=>a+b,0)+' 件';
+  $('#trb').innerHTML=have.length?have.map(k=>{const g=GOODS[k];return `<div class="it"><span class="ic">${g.e}</span><div class="tx"><b>${g.n}</b> ×${bagN(k)}<small>供奉可得功德 +${g.m}</small></div><button class="buy" data-k="${k}">供奉</button></div>`}).join(''):'<p style="text-align:center;opacity:.65;padding:12px 0">背包里还没有供品。先到左右两侧的商铺挑选，再回来进贡。</p>'}}
+const BLESS=['心诚则灵，愿你所愿皆成真。','供养三宝，福慧增长。','一份心意，一分清净。','愿家人平安，诸事顺遂。','佛前一礼，心中安定。'];
+function buy(k){const g=GOODS[k],m=$('#trm');
+ if(P.coin<g.p){m.style.color='#f0a080';m.textContent='香火钱不够了：敲木鱼、完成今日修行都能得香火钱';return}
+ P.coin-=g.p;P.bag[k]=bagN(k)+1;save();coinUI();m.style.color='';m.textContent='已购买'+g.n+'（背包 '+bagN(k)+'）　去大殿供桌进贡吧';renderTR()}
+function offer(k){if(!bagN(k))return;const g=GOODS[k],m=$('#trm');P.bag[k]--;P.gift[k]=(P.gift[k]||0)+1;P.merit+=g.m;P.offer++;P.day.alt[k]=(P.day.alt[k]||0)+1;save();
+ addAltar(k,P.day.alt[k]-1);altarFx(k);if(g.k==='stick')incenseSnd();else wishSnd();done('offer');
+ m.style.color='';m.textContent='已供奉'+g.n+'　功德 +'+g.m+'　'+BLESS[Math.floor(rnd()*BLESS.length)];renderTR()}
+$('#trb').onclick=e=>{const b=e.target.closest('.buy');if(!b)return;if(trMode==='shop')buy(b.dataset.k);else offer(b.dataset.k)};
+coinUI();
+
+
+/* ========== 音效 ========== */
+let ac,sfxG,ambG,musG,sfxOn=store.get('sfxOn',true),sfxVol=store.get('sfxVol',.8);
+function AC(){if(!ac){ac=new (window.AudioContext||window.webkitAudioContext)();sfxG=ac.createGain();ambG=ac.createGain();musG=ac.createGain();musG.gain.value=0;[sfxG,ambG,musG].forEach(g=>g.connect(ac.destination));applySfx()}if(ac.state==='suspended')ac.resume();return ac}
+function applySfx(){if(!ac)return;sfxG.gain.value=sfxOn?sfxVol:0;ambG.gain.value=sfxOn?sfxVol*.8:0}
+let _nb;const noiseBuf=c=>_nb||(_nb=(()=>{const b=c.createBuffer(1,c.sampleRate*2,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=rnd()*2-1;return b})());
+function tone(f,t,d,v,ty='sine',f2=0,out){const c=AC(),o=c.createOscillator(),g=c.createGain();o.type=ty;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(v,t+.01);g.gain.exponentialRampToValueAtTime(.0005,t+d);o.connect(g);g.connect(out||sfxG);o.start(t);o.stop(t+d+.05)}
+function nz(t,d,v,ty,f,q=1,out){const c=AC(),s=c.createBufferSource(),fl=c.createBiquadFilter(),g=c.createGain();s.buffer=noiseBuf(c);fl.type=ty;fl.frequency.value=f;fl.Q.value=q;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0005,t+d);s.connect(fl);fl.connect(g);g.connect(out||sfxG);s.start(t,rnd());s.stop(t+d+.02)}
+const T=()=>AC().currentTime;
+const stoneAt=(x,z)=>Math.abs(x)<3.5||(Math.abs(x)<25&&z>-19&&z<7)||(Math.abs(x)<23&&z<-18&&z>-42);
+function stepSnd(st){const t=T();st?nz(t,.07,.16,'bandpass',1500+rnd()*500,1.2):nz(t,.1,.12,'lowpass',380+rnd()*120)}
+function clickSnd(){tone(990,T(),.08,.14,'sine',660)}
+function incenseSnd(){const t=T();nz(t,.5,.22,'bandpass',900,.8);for(let i=0;i<7;i++)nz(t+.15+rnd()*.7,.03,.12,'highpass',4000);tone(659,t+.3,1.6,.12);tone(988,t+.45,1.4,.08)}
+function lampSnd(){const t=T();nz(t,.35,.2,'lowpass',1200);[784,1175,1568].forEach((f,i)=>tone(f,t+.1+i*.12,1.4,.12))}
+function signSnd(){const t=T();for(let i=0;i<10;i++)nz(t+i*.07,.05,.18,'bandpass',2600+rnd()*900,2);tone(240,t+.85,.12,.3,'square',120);tone(180,t+.95,.1,.2,'square',100)}
+function wishSnd(){const t=T();nz(t,.3,.14,'highpass',3000);[1047,1319,1568,2093].forEach((f,i)=>tone(f,t+.12+i*.1,1.2,.09))}
+function waterSnd(){const t=T();[0,.25,.55].forEach(d=>tone(900+rnd()*300,t+d,.18,.14,'sine',300));nz(t,.6,.1,'lowpass',700)}
+function bowlSnd(v=1){const t=T();[220,607,1188,1980].forEach((f,i)=>tone(f,t,5-i*.8,.22*v/(i+1)));tone(222,t,5,.15*v)}
+function doneSnd(){const t=T();tone(784,t,.7,.14,'triangle');tone(1175,t+.14,1,.14,'triangle')}
+function talkSnd(){tone(440,T(),1,.1)}
+document.addEventListener('click',e=>{if(ac&&e.target.closest&&e.target.closest('button')&&!e.target.closest('#act'))clickSnd()});
+const amb={on:0};
+function ambStart(){if(amb.on)return;amb.on=1;const c=AC(),w=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain(),l=c.createOscillator(),lg=c.createGain();w.buffer=noiseBuf(c);w.loop=true;f.type='lowpass';f.frequency.value=420;g.gain.value=.05;l.frequency.value=.12;lg.gain.value=.025;l.connect(lg);lg.connect(g.gain);w.connect(f);f.connect(g);g.connect(ambG);w.start();l.start();
+ const o=c.createOscillator(),a=c.createGain(),m=c.createOscillator(),mg=c.createGain(),cg=c.createGain();o.frequency.value=4300;a.gain.value=.01;m.type='square';m.frequency.value=24;mg.gain.value=.01;m.connect(mg);mg.connect(a.gain);cg.gain.value=0;o.connect(a);a.connect(cg);cg.connect(ambG);o.start();m.start();amb.cg=cg;ambUpdate();
+ (function bird(){if(!night){const t=c.currentTime,f=2200+rnd()*1200;for(let i=0;i<3;i++)tone(f,t+i*.1,.09,.04,'sine',f*1.3,ambG)}setTimeout(bird,2500+rnd()*5000)})()}
+function ambUpdate(){if(amb.on)amb.cg.gain.setTargetAtTime(night?1:0,ac.currentTime,1.5)}
+
+function bellSnd(){const c=AC(),t=c.currentTime,g=c.createGain();g.gain.setValueAtTime(.5,t);g.gain.exponentialRampToValueAtTime(.001,t+4.5);g.connect(sfxG);
+ [110,220,331,452,690].forEach((f,i)=>{const o=c.createOscillator(),h=c.createGain();o.frequency.value=f;h.gain.value=.5/(i+1);o.connect(h);h.connect(g);o.start(t);o.stop(t+4.5)})}
+function fishSnd(){const c=AC(),t=c.currentTime,o=c.createOscillator(),g=c.createGain();o.type='triangle';o.frequency.setValueAtTime(520,t);o.frequency.exponentialRampToValueAtTime(260,t+.12);g.gain.setValueAtTime(.6,t);g.gain.exponentialRampToValueAtTime(.001,t+.18);o.connect(g);g.connect(sfxG);o.start(t);o.stop(t+.2)}
+
+/* ========== UI：提示、弹窗、修行清单 ========== */
+let toastT;function toast(t){const e=$('#toast');e.textContent=t;e.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>e.style.opacity=0,2800)}
+function openModal(title,text,input,ok){$('#mt').textContent=title;$('#mp').textContent=text;$('#mi').style.display=input?'':'none';$('#mi').value='';$('#mok').style.display=ok?'':'none';$('#mok').onclick=()=>{ok&&ok($('#mi').value.trim());closeModal()};$('#modal').style.display='flex';modalOpen=true;if(input)setTimeout(()=>$('#mi').focus(),50)}
+function closeModal(){$('#modal').style.display='none';modalOpen=false}$('#mc').onclick=closeModal;
+const Q={incense:['上香',0],bell:['敲钟',0],lamp:['点灯',0],sign:['抽签',0],wish:['许愿',0],boat:['放河灯',0],bow:['参拜观音',0],talk:['向僧人问道',0],sit:['静坐片刻',0],offer:['进贡供养',0]};const SIT_GOAL=20;let lastDone='';Object.keys(P.day.q).forEach(k=>Q[k]&&(Q[k][1]=1));
+function renderQ(){const n=Object.values(Q).filter(v=>v[1]).length,q=$('#quest');
+ q.innerHTML='<b>今日修行 '+n+'/'+Object.keys(Q).length+(q.classList.contains('min')?' ▸':' ▾')+'</b><div class="qs">'+Object.entries(Q).map(([k,v])=>`<div class="${v[1]?'ok':''}${k===lastDone?' new':''}"><i>${v[1]?'✓':'○'}</i><span>${v[0]}${k==='sit'&&!v[1]&&(P.day.sit||0)>=1?'　'+Math.floor(P.day.sit)+'/'+SIT_GOAL+'秒':''}</span></div>`).join('')+'</div>'}
+$('#quest').onclick=()=>{$('#quest').classList.toggle('min');renderQ()};
+function done(k){if(Q[k][1])return;Q[k][1]=1;P.day.q[k]=1;P.coin+=8;lastDone=k;setTimeout(()=>{lastDone='';renderQ()},1500);save();coinUI();doneSnd();renderQ();if(Object.values(Q).every(v=>v[1])){setTimeout(()=>{toast('功德圆满　愿你诸事顺遂，平安喜乐');for(let i=0;i<120;i++){const a=rnd()*6.28,e=rnd()*3.1,s=4+rnd()*5;puff(me.x,6,me.z,[0xffd070,0xff8a50,0xffe9a0,0xf4a0c0][i%4],Math.sin(e)*Math.cos(a)*s,Math.cos(e)*s*.8,Math.sin(e)*Math.sin(a)*s,2,-.35,.18)}},1200)}}
+
+/* ========== 互动点 ========== */
+const SIGNS=[['上上签','云开见月','守得云开见月明，心头所愿渐成形。宜：向前一步。'],['上签','春风入怀','不必焦急，花自有花期。宜：保持耐心。'],['中吉','清泉石上','事缓则圆，慢慢来比较快。宜：整理心绪。'],['中吉','舟行平湖','顺水行舟，贵人常在身边。宜：多听多问。'],['小吉','灯下读书','一分耕耘，一分收获。宜：专注当下。'],['小吉','竹影扫阶','尘不动，心不乱。宜：独处片刻。'],['平','雨后初晴','眼前虽有小阻，转角自有光明。宜：休息一天。'],['上签','莲开并蒂','所求皆有回应，愿你被温柔相待。宜：感恩身边人。']];
+const WISE=['心安，处处是净土。','走慢一点，风景都在路上。','烦恼像云，来了会走。','一念放下，一念轻松。','先照顾好自己，才有余力照顾世界。','不必急着要答案，先好好吃饭睡觉。'];
+let bow=0,swing=0,burning=false,st=0,litN=P.day.lamps||0;
+lamps.slice(0,litN).forEach(l=>{l.userData.on=1;l.material.color.set(0xffc040);l.material.emissive.set(0xff9a20);l.material.emissiveIntensity=1.6});
+const bmp=k=>{P[k]++;save()};
+const spots=[
+ {p:[0,24],r:4.5,label:'上　香',fn(){burning=true;bmp('burn');incenseSnd();toast('心香一炷，愿平安顺遂（累计上香 '+P.burn+' 次）');done('incense')}},
+ {p:[-15,12],r:5.5,label:'敲　钟',fn(){bellSnd();swing=1;bmp('bell');toast('钟声 '+((P.bell-1)%108+1)+' / 108　　闻钟声，烦恼轻');done('bell')}},
+ {p:[11.5,9.5],r:5,label:'点　灯',fn(){const u=lamps.find(l=>!l.userData.on);if(!u){toast('莲灯已全部点亮');return}u.userData.on=1;u.material.color.set(0xffc040);u.material.emissive.set(0xff9a20);u.material.emissiveIntensity=1.6;litN++;P.day.lamps=litN;bmp('lit');lampSnd();toast('点亮一盏莲灯（'+litN+'/6）　一灯照亮一心');done('lamp')}},
+ {p:[5,-6],r:3,label:'敲木鱼',fn(){fishSnd();bmp('fish');bow=.35;fishCoin();toast('笃 · 笃　　功德 +1（累计 '+P.fish+'）')}},
+ {p:[-5,-6],r:3,label:'求　签',fn(){signSnd();const s=SIGNS[Math.floor(rnd()*SIGNS.length)];bmp('sign');P.signs.unshift({d:dayStr(0),t:s[0]+'《'+s[1]+'》',x:s[2]});P.signs=P.signs.slice(0,30);save();openModal(s[0]+'《'+s[1]+'》',s[2]+'\n（签文仅供娱乐，心安即是好签）',false,null);done('sign')}},
+ {p:[0,-27],r:5.5,label:'合十参拜',fn(){bow=2.2;bmp('bow');bowlSnd();toast('合十参拜大观音　愿你与家人平安喜乐');done('bow')}},
+ {p:[TX,TZ+3],r:6,label:'挂福牌',fn(){const o=wishes[Math.floor(rnd()*wishes.length)];openModal('许愿树','树上有一枚福牌写着：“'+o+'”\n写下你的心愿，挂上去吧。',true,v=>{if(!v)return;wishes.unshift(v);wishes=wishes.slice(0,30);store.set('wishes',wishes);P.mine.unshift({d:dayStr(0),t:v});P.mine=P.mine.slice(0,50);bmp('wish');wishSnd();if(wishTags.length<30)addTag();toast('福牌已挂上枝头　心愿自有回响');done('wish')})}},
+ {p:[PX-1,PZ+8.2],r:4.5,label:'放河灯',fn(){floatLamp();waterSnd();bmp('boat');toast('河灯入水，带着心愿缓缓漂远');done('boat')}},
+ {p:[0,0],r:3.5,label:'问　道',fn(){talkSnd();bmp('talk');toast('僧人合十：“'+WISE[Math.floor(rnd()*WISE.length)]+'”');done('talk')},monk:true}
+];
+SEATS.forEach((s,i)=>spots.push({p:[s.x,s.z],r:1.9,label:'打　坐',seat:i,fn(){sitTo(i)}}));
+SHOPS.forEach(d=>spots.push({p:[d.cx-d.s*.8,d.cz],r:3,label:'选　购',fn(){openShop(d)}}));
+spots.push({p:[0,-7.7],r:3.2,label:'进　贡',fn(){openAltar()}});
+let near=null;
+function act(){if(near&&started&&!modalOpen)near.fn()}
+$('#act').onclick=act;
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'){if(e.code==='Enter'&&e.target.id==='mi')$('#mok').click();return}if(e.code==='Escape')closeP();keys[e.code]=1;if(e.code==='KeyE')act();if(e.code==='KeyT')setTime(!night);if(started&&e.code==='KeyP')curP==='#pc'?closeP():openPC();if(started&&e.code==='KeyN')curP==='#np'?closeP():openNP()});
+addEventListener('keyup',e=>keys[e.code]=0);
+
+/* ========== 视角与摇杆：触屏左半屏浮动摇杆（拉出圈外=跑），右半屏拖动转视角 ========== */
+let yaw=0,pitch=.35,camP=null,joyId=null;
+const joy={x:0,y:0,run:0},J=$('#joy'),K=$('#knob'),JR=54,CVS=ren.domElement;let jcx=0,jcy=0;
+CVS.addEventListener('pointerdown',e=>{
+ if(e.pointerType==='touch'){document.body.classList.add('touch');if(e.clientX<innerWidth*.5&&joyId===null){joyId=e.pointerId;joyStart(e);return}}
+ if(!camP)camP={id:e.pointerId,x:e.clientX,y:e.clientY}});
+addEventListener('pointermove',e=>{
+ if(e.pointerId===joyId)jm(e);
+ else if(camP&&e.pointerId===camP.id){const k=e.pointerType==='touch'?1.3:1;yaw-=(e.clientX-camP.x)*.006*k;pitch=Math.min(.9,Math.max(.12,pitch+(e.clientY-camP.y)*.004*k));camP.x=e.clientX;camP.y=e.clientY}});
+const pend=e=>{if(e.pointerId===joyId)joyEnd();if(camP&&e.pointerId===camP.id)camP=null};
+addEventListener('pointerup',pend);addEventListener('pointercancel',pend);
+function joyStart(e){const h=J.offsetWidth/2;jcx=Math.max(h+6,Math.min(innerWidth*.5,e.clientX));jcy=Math.max(h+6,Math.min(innerHeight-h-6,e.clientY));J.style.left=jcx-h+'px';J.style.top=jcy-h+'px';J.style.bottom='auto';J.classList.add('on');jm(e)}
+function jm(e){let dx=(e.clientX-jcx)/JR,dy=(e.clientY-jcy)/JR;const l=Math.hypot(dx,dy);joy.run=l>1.35?1:0;if(l>1){dx/=l;dy/=l}joy.x=Math.abs(dx)<.1?0:dx;joy.y=Math.abs(dy)<.1?0:dy;K.style.transform='translate('+dx*JR+'px,'+dy*JR+'px)';J.classList.toggle('run',!!joy.run)}
+function joyEnd(){joyId=null;joy.x=joy.y=joy.run=0;K.style.transform='';J.classList.remove('on','run');J.style.left=J.style.top=J.style.bottom=''}
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('gesturestart',e=>e.preventDefault());
+// 全屏 + 锁定横屏（Android / 安卓浏览器可用；iPhone Safari 不支持网页全屏，只能手动横屏）
+function fsToggle(quiet){const d=document.documentElement,fe=document.fullscreenElement||document.webkitFullscreenElement;
+ if(fe){try{(document.exitFullscreen||document.webkitExitFullscreen).call(document)}catch(e){}try{screen.orientation.unlock()}catch(e){}return}
+ const rq=d.requestFullscreen||d.webkitRequestFullscreen;
+ if(!rq){if(!quiet)toast('这个浏览器不支持网页全屏，请手动把手机横过来；iPhone 可用「分享 → 添加到主屏幕」后全屏打开');return}
+ try{Promise.resolve(rq.call(d)).then(()=>screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape')).catch(()=>{})}catch(e){}}
+$('#bfs').onclick=()=>fsToggle(false);
+$('#bmus').onclick=()=>$('#tl').classList.toggle('mopen');
+$('#rot').onclick=e=>e.currentTarget.remove();
+
+/* ========== 动画与主循环 ========== */
+function animChar(o,walk,mag,bw,sit=0){const sw=Math.sin(walk)*.7*mag,k1=1-sit;o.lL.rotation.x=sw*k1-1.45*sit;o.lR.rotation.x=-sw*k1-1.45*sit;o.lL.rotation.z=.35*sit;o.lR.rotation.z=-.35*sit;
+ if(bw>0){const k=Math.max(0,Math.min(1,bw*3,(2.2-bw)*3));o.aL.rotation.x=o.aR.rotation.x=-1.4*k;o.aL.rotation.z=.5*k;o.aR.rotation.z=-.5*k;o.b.rotation.x=.35*k}
+ else{o.aL.rotation.x=-sw*k1-.9*sit;o.aR.rotation.x=sw*k1-.9*sit;o.aL.rotation.z=.3*sit;o.aR.rotation.z=-.3*sit;o.b.rotation.x=0}o.b.position.y=Math.abs(Math.sin(walk))*.05*mag-.42*sit+Math.sin(performance.now()/1200)*.012*sit}
+let moving=0,lstep=0;
+const clock=new THREE.Clock();setTime(true);renderQ();
+cam.position.set(0,14,64);cam.lookAt(0,8,-20);
+let camD=9;
+function loop(){requestAnimationFrame(loop);const raw=clock.getDelta(),dt=Math.min(raw,.05),t=clock.elapsedTime;
+ if(started){
+  let fw=0,rt=0;if(!modalOpen){fw=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)-joy.y;rt=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+joy.x}
+  const mx=-Math.sin(yaw)*fw+Math.cos(yaw)*rt,mz=-Math.cos(yaw)*fw-Math.sin(yaw)*rt,mag=Math.min(1,Math.hypot(mx,mz));
+  if(me.seat>=0&&mag>.35)standUp();moving=0;if(mag>.05&&bow<=0&&me.seat<0){moving=1;const sp=(keys.ShiftLeft||keys.ShiftRight||joy.run?9:5)*dt;me.x+=mx/mag*sp*mag;me.z+=mz/mag*sp*mag;
+   const d=Math.atan2(Math.sin(Math.atan2(mx,mz)-me.face),Math.cos(Math.atan2(mx,mz)-me.face));me.face+=d*Math.min(1,dt*12);me.walk+=dt*9;const sk=Math.floor(me.walk/Math.PI);if(sk!==lstep){lstep=sk;stepSnd(stoneAt(me.x,me.z))}}
+  const pp={x:me.x,z:me.z};if(me.seat<0)resolve(pp,.5);me.x=Math.max(-70,Math.min(70,pp.x));me.z=Math.max(-60,Math.min(66,pp.z));
+  const g=me.o.g;g.position.x=me.x;g.position.z=me.z;g.position.y+=(hgt(me.x,me.z)-g.position.y)*Math.min(1,dt*14);g.rotation.y=me.face;
+  if(bow>0)bow-=dt;me.sit+=((me.seat>=0?1:0)-me.sit)*Math.min(1,dt*6);animChar(me.o,me.walk,mag>.05&&bow<=0&&me.seat<0?1:0,bow,me.sit);sitTick(Math.min(raw,1));shopTick(dt);
+  camD+=((curShop?5.6:9)-camD)*Math.min(1,dt*4);const D=camD,cy=g.position.y+2;cam.position.set(me.x+Math.sin(yaw)*D*Math.cos(pitch),Math.max(.6,cy+Math.sin(pitch)*D),me.z+Math.cos(yaw)*D*Math.cos(pitch));cam.lookAt(me.x,cy,me.z);
+  near=null;let best=1e9;if(me.seat>=0)near={label:'起　身'+(Q.sit[1]?'':'　'+Math.min(SIT_GOAL,Math.floor(P.day.sit||0))+'/'+SIT_GOAL),fn:standUp};else spots.forEach(s=>{if(s.seat!==undefined&&seatTaken(s.seat))return;if(s.monk)s.p=[monk.g.position.x,monk.g.position.z];const d=Math.hypot(me.x-s.p[0],me.z-s.p[1]);if(d<s.r&&d<best){best=d;near=s}});
+  const a=$('#act');a.style.display=near&&!modalOpen?'block':'none';if(near)a.textContent=near.label;
+ }else{const a=t*.08;cam.position.set(Math.sin(a)*70,18,Math.cos(a)*40+10);cam.lookAt(0,8,-8)}
+ // 僧人巡游：走近时停下并朝向玩家
+ const dm=Math.hypot(me.x-monk.g.position.x,me.z-monk.g.position.z);let mm=0;
+ if(started&&dm<4.5){mk.face=Math.atan2(me.x-monk.g.position.x,me.z-monk.g.position.z)}
+ else{mk.z+=mk.dir*1.1*dt;if(mk.z<9||mk.z>32)mk.dir*=-1;mk.face=mk.dir<0?Math.PI:0;mm=1;mk.walk+=dt*6}
+ monk.g.position.z=mk.z;monk.g.rotation.y=mk.face;animChar(monk,mk.walk,mm,0);
+ swing*=.985;bellG.rotation.z=Math.sin(t*5)*swing*.4;
+ if(burning){st+=dt;if(st>.12){st=0;puff((rnd()-.5)*.8,3.4,24+(rnd()-.5)*.4,0xdddddd,(rnd()-.5)*.2,.8+rnd()*.5,0,4,.9)}fireL.intensity=(1+Math.sin(t*12)*.2)*LS()*1.2}
+ lampL.intensity=litN?(1+litN*.25)*LS():0;
+ for(let i=parts.length-1;i>=0;i--){const m=parts[i],u=m.userData;m.position.x+=u.vx*dt;m.position.y+=u.vy*dt;m.position.z+=u.vz*dt;u.l-=dt;m.scale.multiplyScalar(Math.max(.01,1+u.grow*dt));m.material.opacity=.6*Math.max(0,u.l/u.life);if(u.l<=0){scene.remove(m);m.material.dispose();parts.splice(i,1)}}
+ boats.forEach(b=>{b.a+=b.s*dt;b.m.position.set(PX+Math.cos(b.a)*b.r,.2+Math.sin(t*2+b.a*5)*.02,PZ+Math.sin(b.a)*b.r)});
+ wishTags.forEach((m,i)=>{m.rotation.z=Math.sin(t*1.8+i)*.18});
+ if(night){const p=ff.geometry.attributes.position;for(let i=0;i<p.count;i++){p.array[i*3]+=Math.sin(t+i)*.004;p.array[i*3+1]=1.2+Math.sin(t*.8+i*3)*1.2}p.needsUpdate=true}ff.visible=night;
+ netTick(dt);ren.render(scene,cam)}
+
+$('#go').onclick=()=>{if(coarse()&&!document.fullscreenElement&&!document.webkitFullscreenElement)fsToggle(true);P.name=$('#nm').value.trim()||'游客';P.robe=robe;P.visits++;if(P.last!==dayStr(0)){P.streak=P.last===dayStr(1)?P.streak+1:1;P.last=dayStr(0);P.first=P.first||P.last}save();
+ me.o=makeChar(robe,false,P.name);scene.add(me.o.g);me.o.g.position.set(me.x,0,me.z);$('#start').style.display='none';$('#bar').style.display='flex';started=true;AC();ambStart();if(want)playMusic();
+ const bonus=!P.day.bonus;if(bonus){P.day.bonus=1;P.coin+=30;save();coinUI()}
+ toast(bonus?'今日布施　香火钱 +30　左右两侧商铺可选购供品，再到大殿供桌进贡':'入寺随喜　逛逛商铺、香炉、钟楼、莲池、许愿树和蒲团');
+ if(nset.mode!=='off')setTimeout(()=>netOn(nset.mode),600)};
+
+/* ========== 打坐：当天累计静坐 SIT_GOAL 秒即打勾，中途起身不会清零 ========== */
+let sitS=0,sitN=60,sitShown=-1;
+function sitTo(i){if(me.seat>=0)return;if(seatTaken(i)){toast('这个蒲团已有人');return}const s=SEATS[i];me.seat=i;me.x=s.x;me.z=s.z;me.face=s.f;sitS=0;sitN=60;sitShown=-1;bowlSnd(.5);toast(Q.sit[1]?'盘膝而坐，静心片刻（点「起身」或推摇杆 / 按 E 即可起身）':'盘膝而坐，静坐满 '+SIT_GOAL+' 秒即可完成修行（点「起身」或推摇杆 / 按 E 起身）');nsend({t:'seat',seat:i})}
+function standUp(){if(me.seat<0)return;const s=SEATS[me.seat];me.x=s.x+Math.sin(s.f)*1.3;me.z=s.z+Math.cos(s.f)*1.3;me.seat=-1;nsend({t:'seat',seat:-1});if(!Q.sit[1]&&(P.day.sit||0)>=2)toast('已静坐 '+Math.floor(P.day.sit)+'/'+SIT_GOAL+' 秒，再坐一会儿就能打勾（时间会累计）');renderQ()}
+function sitTick(dt){if(me.seat<0)return;P.sit+=dt;sitS+=dt;P.day.sit=(P.day.sit||0)+dt;
+ const s=Math.floor(P.day.sit);if(s!==sitShown){sitShown=s;renderQ()}
+ if(!Q.sit[1]&&P.day.sit>=SIT_GOAL){done('sit');toast('静坐满 '+SIT_GOAL+' 秒　✓ 今日修行已记录')}
+ if(sitS>=sitN){sitN+=60;toast('已静坐 '+Math.floor(sitS/60)+' 分钟　心渐安');bowlSnd(.35)}}
+
+/* ========== 背景音乐：西楼儿女 / 内置古风 ========== */
+const SY={on:false,i:3},PEN=[293.66,329.63,369.99,440,493.88,587.33,659.25,739.99];
+function synStart(){const c=AC();if(SY.on)return;SY.on=true;
+ if(!SY.bus){const b=c.createGain(),d=c.createDelay(1),fb=c.createGain();d.delayTime.value=.42;fb.gain.value=.4;b.connect(musG);b.connect(d);d.connect(fb);fb.connect(d);d.connect(musG);SY.bus=b;
+  [[146.83,.06],[220,.04],[293.66,.025]].forEach(([f,v])=>{const o=c.createOscillator(),g=c.createGain();o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(musG);o.start()})}
+ musG.gain.setTargetAtTime(mv,c.currentTime,.5);synLoop()}
+function synStop(){if(!SY.on)return;SY.on=false;clearTimeout(SY.t);if(ac)musG.gain.setTargetAtTime(0,ac.currentTime,.3)}
+function synLoop(){if(!SY.on)return;const c=ac,t=c.currentTime+.05;SY.i=Math.max(0,Math.min(7,SY.i+[-2,-1,-1,0,1,1,2][Math.floor(rnd()*7)]));
+ [[PEN[SY.i],.16],[rnd()<.4?PEN[SY.i]/2:0,.1]].forEach(([f,v],k)=>{if(!f)return;const o=c.createOscillator(),g=c.createGain();o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(.0001,t+k*.02);g.gain.linearRampToValueAtTime(v,t+k*.02+.01);g.gain.exponentialRampToValueAtTime(.0005,t+1.6);o.connect(g);g.connect(SY.bus);o.start(t);o.stop(t+1.7)});
+ SY.t=setTimeout(synLoop,[500,500,800,1100,1500][Math.floor(rnd()*5)])}
+const bgm=$('#bgm');let fileOK=null,want=store.get('mwant',true),trk='',mv=store.get('mvol',.5);bgm.volume=mv;$('#mvol').value=mv*100;$('#msfx').textContent='音效：'+(sfxOn?'开':'关');
+const idb=(m,k,v)=>new Promise(r=>{try{const q=indexedDB.open('dgys',1);q.onupgradeneeded=()=>q.result.createObjectStore('kv');q.onsuccess=()=>{const o=q.result.transaction('kv',m).objectStore('kv'),x=m==='readonly'?o.get(k):v===undefined?o.delete(k):o.put(v,k);x.onsuccess=()=>r(x.result);x.onerror=()=>r()};q.onerror=()=>r()}catch(e){r()}});
+function mState(){const on=!bgm.paused||SY.on;$('#music').classList.toggle('on',on);$('#mtxt').textContent='音乐：'+(on?'开':'关');$('#trk').textContent=fileOK===false?'没找到歌曲文件，正播放内置古风纯音乐。点「导入歌曲」选 西楼儿女 的音频，只需一次，之后自动记住':fileOK?'《'+trk+'》':''}
+function playMusic(){if(fileOK===null)return;if(fileOK){synStop();bgm.play().then(mState).catch(()=>mState())}else synStart();mState()}
+function stopMusic(){bgm.pause();synStop();mState()}
+bgm.addEventListener('canplay',()=>{fileOK=true;if(!trk)trk='西楼儿女';if(want&&started&&bgm.paused)playMusic();mState()});
+bgm.addEventListener('error',async()=>{if(bgm.dataset.b){fileOK=false;if(want&&started)playMusic();return mState()}const b=await idb('readonly','bgm');if(b){bgm.dataset.b=1;bgm.src=URL.createObjectURL(b);trk=(b.name||'已导入歌曲').replace(/\.\w+$/,'')}else{fileOK=false;if(want&&started)playMusic();mState()}});
+bgm.addEventListener('play',mState);bgm.addEventListener('pause',mState);
+if(bgm.error)bgm.dispatchEvent(new Event('error'));else if(bgm.readyState>=3)bgm.dispatchEvent(new Event('canplay'));
+$('#mbtn').onclick=()=>{if(!bgm.paused||SY.on){want=false;store.set('mwant',false);stopMusic()}else{want=true;store.set('mwant',true);AC();if(fileOK===null)toast('歌曲加载中…');playMusic()}};
+$('#mimp').onclick=()=>$('#mfile').click();
+$('#mfile').onchange=e=>{const f=e.target.files[0];if(!f)return;idb('readwrite','bgm',f);synStop();bgm.dataset.b=1;fileOK=null;trk=f.name.replace(/\.\w+$/,'');bgm.src=URL.createObjectURL(f);want=true;store.set('mwant',true);toast('已导入《'+trk+'》，以后会自动记住')};
+$('#mvol').oninput=e=>{mv=e.target.value/100;bgm.volume=mv;store.set('mvol',mv);if(SY.on)musG.gain.value=mv};
+$('#msfx').onclick=()=>{sfxOn=!sfxOn;store.set('sfxOn',sfxOn);applySfx();$('#msfx').textContent='音效：'+(sfxOn?'开':'关')};
+addEventListener('keydown',e=>{if(e.target.tagName!=='INPUT'&&e.code==='KeyM')$('#mbtn').click()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stopMusic();else if(want&&started)playMusic()});
+
+/* ========== 面板与个人中心 ========== */
+let curP=null,tab=0;
+function openP(id){if(modalOpen)return;for(const k in keys)keys[k]=0;joyEnd();camP=null;$(id).style.display='flex';modalOpen=true;curP=id}
+function closeP(){if(!curP)return;$(curP).style.display='none';curP=null;modalOpen=false}
+$('#pclose').onclick=$('#nclose').onclick=$('#trclose').onclick=closeP;$('#bpc').onclick=openPC;$('#bnet').onclick=openNP;
+$('#ptabs').onclick=e=>{const i=e.target.dataset.i;if(i!==undefined){tab=+i;renderPC()}};
+function openPC(){openP('#pc');renderPC()}
+function renameMe(){me.o.g.remove(me.o.lab);me.o.g.add(me.o.lab=spriteText(P.name));netInfo()}
+function renderPC(){const mn=s=>Math.floor(s/60),g=a=>'<div class="g">'+a.map(([k,v])=>`<span>${k}</span><b>${v}</b>`).join('')+'</div>',
+ li=a=>a.length?a.map(x=>`<div class="li">${esc(x.t)}<small>${x.d}${x.x?'　'+esc(x.x):''}</small></div>`).join(''):'<p style="opacity:.6;text-align:center">还没有记录</p>';
+ $('#ptabs').innerHTML=['概览','修行','背包','签文簿','心愿簿','设置'].map((t,i)=>`<button data-i="${i}" class="${i==tab?'on':''}">${t}</button>`).join('');
+ const h=[()=>g([['道号',esc(P.name)],['入寺次数',P.visits],['连续入寺',(P.last===dayStr(0)||P.last===dayStr(1)?P.streak:0)+' 天'],['首次入寺',P.first||'—'],['在寺时长',mn(P.sec)+' 分钟'],['今日修行',Object.values(Q).filter(v=>v[1]).length+'/'+Object.keys(Q).length],['香火钱',P.coin],['累计功德',P.merit]]),
+ ()=>g([['上香',P.burn],['敲钟（本轮 '+P.bell%108+'/108）',P.bell],['敲木鱼',P.fish],['点灯',P.lit],['求签',P.sign],['挂福牌',P.wish],['放河灯',P.boat],['合十参拜',P.bow],['问道',P.talk],['静坐',mn(P.sit)+' 分钟'],['进贡供品',P.offer+' 件']]),
+ ()=>g(GKEYS.map(k=>[GOODS[k].e+' '+GOODS[k].n,bagN(k)+' 件　已供 '+(P.gift[k]||0)])),()=>li(P.signs),()=>li(P.mine),
+ ()=>`<div class="g"><span>道号</span><input id="pn" maxlength="8" value="${esc(P.name)}" style="width:100%"><span>音效音量</span><input type="range" id="psv" min="0" max="100" value="${sfxVol*100}" style="width:100%;padding:0"></div><div style="text-align:center;margin-top:10px"><button class="go" id="pmd">忘记已导入的歌曲</button><button class="go" id="pclr" style="background:#3a3228">清除全部记忆</button></div>`][tab]();
+ $('#pbody').innerHTML=h;
+ if(tab==5){$('#pn').onchange=e=>{P.name=e.target.value.trim()||'游客';save();if(me.o)renameMe()};
+  $('#psv').oninput=e=>{sfxVol=e.target.value/100;store.set('sfxVol',sfxVol);applySfx()};
+  $('#pmd').onclick=()=>{idb('readwrite','bgm');toast('已忘记导入的歌曲，下次刷新生效')};
+  let sure=0;$('#pclr').onclick=e=>{if(!sure){sure=1;e.target.textContent='再点一次确认清除';return}['profile','wishes','net','sfxVol','sfxOn','mvol','mwant'].forEach(k=>{try{localStorage.removeItem(k)}catch(x){}});location.reload()}}}
+
+/* ========== 联机（服务器 / 本机多标签） ========== */
+const net={mode:'off',ws:null,bc:null,id:Math.random().toString(36).slice(2,8),acc:0,hb:0,lx:0,lz:0,lf:0},peers=new Map();
+const nset=Object.assign({url:/^https?:/.test(location.protocol)?(location.protocol==='https:'?'wss://':'ws://')+location.host:'ws://localhost:8080',room:'main',mode:'off'},store.get('net',{}));
+const nsend=o=>{o.id=net.id;if(net.mode==='ws'){net.ws&&net.ws.readyState===1&&net.ws.send(JSON.stringify(o))}else if(net.mode==='local')net.bc.postMessage(o)};
+const seatTaken=i=>[...peers.values()].some(p=>p.seat===i);
+const netInfo=()=>nsend({t:'info',name:P.name,robe,seat:me.seat,x:me.x,z:me.z,f:me.face});
+function addPeer(m){let p=peers.get(m.id);
+ if(!p){const o=makeChar(m.robe||0x3f8f8a,false,m.name||'同修');scene.add(o.g);p={o,x:m.x||0,z:m.z||0,f:m.f||0,tx:m.x||0,tz:m.z||0,tf:m.f||0,w:0,walk:0,sit:0,seat:-1,name:m.name||'同修'};peers.set(m.id,p);toast(p.name+' 入寺了')}
+ else if(m.name&&m.name!==p.name){p.name=m.name;p.o.g.remove(p.o.lab);p.o.g.add(p.o.lab=spriteText(m.name))}
+ if(m.x!==undefined){p.tx=m.x;p.tz=m.z;p.tf=m.f}if(m.seat!==undefined)p.seat=m.seat;p.t=performance.now();netUI()}
+function onNet(m){if(m.t==='welcome'){net.id=m.id;m.players.forEach(q=>addPeer(q));return}if(m.id===net.id)return;const p=peers.get(m.id);
+ if(m.t==='bye'){if(p){scene.remove(p.o.g);peers.delete(m.id);toast(p.name+' 离开了');netUI()}}
+ else if(m.t==='hello')netInfo();
+ else if(m.t==='deny'){if(me.seat===m.seat){standUp();toast('这个蒲团刚被别人坐了')}}
+ else if(m.t==='info')addPeer(m);
+ else if(m.t==='pos'){if(p){p.tx=m.x;p.tz=m.z;p.tf=m.f;p.w=m.w;p.t=performance.now()}else addPeer(m)}
+ else if(m.t==='seat'&&p){p.seat=m.seat;p.t=performance.now()}}
+function netTick(dt){if(net.mode==='off')return;const nw=performance.now();
+ net.acc+=dt;if(net.acc>.1&&me.o){net.acc=0;const ch=Math.abs(me.x-net.lx)+Math.abs(me.z-net.lz)+Math.abs(me.face-net.lf)>.01;if(ch||++net.hb>10){net.hb=0;net.lx=me.x;net.lz=me.z;net.lf=me.face;nsend({t:'pos',x:+me.x.toFixed(2),z:+me.z.toFixed(2),f:+me.face.toFixed(2),w:moving})}}
+ peers.forEach((p,id)=>{if(nw-p.t>12000){scene.remove(p.o.g);peers.delete(id);netUI();return}
+  const sp=p.seat>=0?SEATS[p.seat]:null;if(sp){p.tx=sp.x;p.tz=sp.z;p.tf=sp.f}
+  const k=Math.min(1,dt*10),dx=p.tx-p.x,dz=p.tz-p.z;p.x+=dx*k;p.z+=dz*k;p.f+=Math.atan2(Math.sin(p.tf-p.f),Math.cos(p.tf-p.f))*k;
+  const mvg=Math.hypot(dx,dz)>.05&&!sp;if(mvg)p.walk+=dt*9;p.sit+=((sp?1:0)-p.sit)*Math.min(1,dt*6);
+  const g=p.o.g;g.position.set(p.x,hgt(p.x,p.z),p.z);g.rotation.y=p.f;animChar(p.o,p.walk,mvg?1:0,0,p.sit)})}
+setInterval(()=>{if(net.mode!=='off'&&me.o)nsend({t:'pos',x:+me.x.toFixed(2),z:+me.z.toFixed(2),f:+me.face.toFixed(2),w:0})},2000);
+function netOff(msg){if(net.ws){net.ws.onclose=null;net.ws.close();net.ws=null}if(net.bc){nsend({t:'bye'});net.bc.close();net.bc=null}net.mode='off';peers.forEach(p=>scene.remove(p.o.g));peers.clear();if(msg)toast(msg);netUI()}
+function netOn(mode){netOff();nset.url=$('#nurl').value.trim()||nset.url;nset.room=$('#nroom').value.trim()||nset.room;nset.mode=mode;store.set('net',nset);
+ if(mode==='local'){if(!window.BroadcastChannel)return toast('此浏览器不支持本机联机');net.mode='local';net.bc=new BroadcastChannel('dgys-'+nset.room);net.bc.onmessage=e=>onNet(e.data);nsend({t:'hello'});netInfo();toast('本机联机已开：再开一个标签页试试')}
+ else{let ws;try{ws=new WebSocket(nset.url)}catch(e){return toast('服务器地址不对')}net.ws=ws;net.mode='ws';
+  const to=setTimeout(()=>{if(ws.readyState!==1)netOff('连接服务器超时，请检查地址，以及 server.js 是否在运行')},6000);
+  ws.onopen=()=>{clearTimeout(to);ws.send(JSON.stringify({t:'join',room:nset.room,name:P.name,robe,seat:me.seat,x:me.x,z:me.z,f:me.face}));toast('已连入房间「'+nset.room+'」');netUI()};
+  ws.onmessage=e=>{try{onNet(JSON.parse(e.data))}catch(x){}};
+  ws.onclose=()=>{clearTimeout(to);if(net.ws===ws)netOff('与服务器断开')}}
+ netUI()}
+function netUI(){const n=peers.size+1,on=net.mode==='local'||(net.mode==='ws'&&net.ws&&net.ws.readyState===1);$('#online').style.display=on?'':'none';$('#online').textContent='同修 '+n+' 人';$('#nstat').textContent=on?(net.mode==='ws'?'已连接服务器':'本机多标签联机')+' · 房间「'+nset.room+'」· 在线 '+n+' 人':'未联机'}
+function openNP(){$('#nurl').value=nset.url;$('#nroom').value=nset.room;netUI();openP('#np')}
+$('#nws').onclick=()=>netOn('ws');$('#nloc').onclick=()=>netOn('local');
+$('#noff').onclick=()=>{nset.mode='off';store.set('net',nset);netOff('已断开联机')};
+addEventListener('pagehide',()=>{if(net.mode!=='off')nsend({t:'bye'})});
+loop();
+</script>
+</body>
+</html>
